@@ -477,6 +477,241 @@
     return ws;
   }
 
+  /* ---------- 総合施工計画書の添付シート ---------- */
+
+  // A4横1ページのシート
+  function landscapeSheet(wb, name) {
+    return wb.addWorksheet(name, {
+      pageSetup: {
+        paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 1,
+        horizontalCentered: true,
+        margins: { left: 0.6, right: 0.6, top: 0.7, bottom: 0.6, header: 0.3, footer: 0.3 }
+      }
+    });
+  }
+
+  // 表題だけのシート。中身は利用者が Excel 上で作成する（全体工程表・総合仮設計画）
+  function addBlank(wb, info, name, memo) {
+    var ws = landscapeSheet(wb, name);
+    var cols = [];
+    var i;
+    for (i = 0; i < 20; i++) { cols.push({ width: 7 }); }
+    ws.columns = cols;
+    textLine(ws, 1, 20, name, 16, true, 30);
+    textLine(ws, 2, 20, '工事名　' + (info.kojiName || ''), 11, false, 22, 'left');
+    textLine(ws, 3, 20, memo, 9, false, 18, 'left');
+    return ws;
+  }
+
+  /* 工種別施工計画書一覧（作成例 7.8） */
+  var KOSHU = [
+    '屋内配管工事施工計画書', '屋内配線工事施工計画書', '金属ダクト配線工事施工計画書',
+    '分電盤、OA盤、制御盤取付け工事施工計画書', '照明器具、配線器具取付け工事施工計画書',
+    '通信・情報（情報表示、拡声他）機器取付け工事施工計画書', '火災報知機器取付け工事施工計画書',
+    'キュービクル式配電盤、直流電源装置搬入・据付け工事施工計画書', '自家発電装置搬入・据付け工事施工計画書',
+    '太陽光発電装置搬入・据付け工事施工計画書', '接地工事施工計画書', '地中配線工事施工計画書',
+    '工場立会検査計画書', '自家用電気工作物使用前自主検査計画書', '総合試運転計画書', '竣工自主検査計画書'
+  ];
+
+  function addKoshu(wb) {
+    var ws = portraitSheet(wb, '工種別施工計画書一覧');
+    ws.columns = [{ width: 6 }, { width: 62 }, { width: 18 }];
+    textLine(ws, 1, 3, '工種別施工計画書一覧', 16, true, 30);
+    textLine(ws, 2, 3, '工種別施工計画書は、次表に示す工種について作成する。（作成しない行は削除してください。）',
+      10, false, 22, 'left');
+    var H = { size: 11, v: 'middle', h: 'center', fill: true };
+    box(ws, 3, 1, 3, 1, 'No.', H);
+    box(ws, 3, 2, 3, 2, '工種別施工計画書', H);
+    box(ws, 3, 3, 3, 3, '提出予定', H);
+    ws.getRow(3).height = 22;
+    KOSHU.forEach(function (name, i) {
+      var r = 4 + i;
+      box(ws, r, 1, r, 1, i + 1, { size: 11, v: 'middle', h: 'center' });
+      box(ws, r, 2, r, 2, name, { size: 11, v: 'middle' });
+      box(ws, r, 3, r, 3, '', { size: 11, v: 'middle' });
+      ws.getRow(r).height = 24;
+    });
+    return ws;
+  }
+
+  /* 安全衛生管理組織（作成例 8.3 の図） */
+  function addAnzenSoshiki(wb, info) {
+    var ws = portraitSheet(wb, '安全衛生管理組織');
+    var cols = [];
+    var i;
+    for (i = 0; i < 19; i++) { cols.push({ width: 5.6 }); }
+    ws.columns = cols;
+    var LAST = 19;
+    var B = { size: 10, v: 'middle', h: 'center' };
+    var S = { size: 9, v: 'middle', h: 'center' };
+    var r;
+
+    textLine(ws, 1, LAST, '安全衛生管理組織', 16, true, 30);
+    textLine(ws, 2, LAST, '安全衛生管理組織を次表に示す。', 11, false, 22, 'left');
+
+    box(ws, 3, 6, 4, 9, '統括安全衛生責任者', B);
+    hline(ws, 4, 10, 12);
+    box(ws, 3, 13, 4, 16, '災害防止協議会', B);
+    ws.mergeCells(5, 1, 5, 5);
+    ws.getCell(5, 1).value = '建築工事業者（元請）';
+    ws.getCell(5, 1).font = { name: FONT, size: 10 };
+    ws.getCell(5, 1).alignment = { vertical: 'middle' };
+    vline(ws, 5, 5, 7);
+    box(ws, 6, 6, 7, 9, '元方安全衛生管理者', B);
+    vline(ws, 8, 8, 7);
+    hline(ws, 9, 3, 14);
+    vline(ws, 9, 9, 2); vline(ws, 9, 9, 7); vline(ws, 9, 9, 14);
+    box(ws, 10, 12, 11, 17, orMaru(info.juchu, '○○○○電気工事株式会社') + '（元請）\n安全衛生責任者', S);
+    vline(ws, 10, 13, 2); vline(ws, 10, 13, 7);
+    vline(ws, 12, 12, 14);
+    hline(ws, 13, 13, 17);
+    vline(ws, 13, 13, 12); vline(ws, 13, 13, 17);
+    box(ws, 14, 1, 15, 4, '建築業者（とび）\n一次下請　安全衛生責任者', S);
+    box(ws, 14, 6, 15, 9, '建築業者（大工）\n一次下請　安全衛生責任者', S);
+    box(ws, 14, 11, 15, 14, '電気工事業者（電力）\n一次下請　安全衛生責任者', S);
+    box(ws, 14, 16, 15, 19, '電気工事業者（通信）\n一次下請　安全衛生責任者', S);
+    vline(ws, 16, 16, 2); vline(ws, 16, 16, 7); vline(ws, 16, 16, 12); vline(ws, 16, 16, 17);
+    box(ws, 17, 1, 18, 4, '建築業者（とび）\n二次下請　安全衛生責任者', S);
+    box(ws, 17, 6, 18, 9, '建築業者（大工）\n二次下請　安全衛生責任者', S);
+    box(ws, 17, 11, 18, 14, '電気工事業者（電力）\n二次下請　安全衛生責任者', S);
+    box(ws, 17, 16, 18, 19, '電気工事業者（通信）\n二次下請　安全衛生責任者', S);
+
+    for (r = 3; r <= 18; r++) { ws.getRow(r).height = 20; }
+    ws.getRow(19).height = 10;
+    textLine(ws, 20, LAST, '（業者名・職種は当該工事に合わせて書き換えてください。枠はセルの罫線です。）', 9, false, 18, 'left');
+    return ws;
+  }
+
+  /* 安全衛生管理活動の計画表（作成例 8.4）。工期が入力されていれば、その月を並べる */
+  function monthList(from, to) {
+    var a = /^(\d{4})-(\d{2})/.exec(from || '');
+    var b = /^(\d{4})-(\d{2})/.exec(to || '');
+    var list = [];
+    var i;
+    if (a && b) {
+      var y = Number(a[1]);
+      var m = Number(a[2]);
+      var ey = Number(b[1]);
+      var em = Number(b[2]);
+      while ((y < ey || (y === ey && m <= em)) && list.length < 36) {
+        list.push({ y: y, m: m });
+        m++;
+        if (m > 12) { m = 1; y++; }
+      }
+    }
+    if (!list.length) {
+      for (i = 0; i < 18; i++) { list.push({ y: 0, m: 0 }); }
+    }
+    return list;
+  }
+
+  function addAnzenKeikaku(wb, info) {
+    var ws = landscapeSheet(wb, '安全衛生活動計画表');
+    var months = monthList(info.kokiFrom, info.kokiTo);
+    var n = months.length;
+    var cols = [{ width: 22 }];
+    var i;
+    for (i = 0; i < n; i++) { cols.push({ width: Math.max(4.2, Math.min(7, 100 / n)) }); }
+    ws.columns = cols;
+    var LAST = n + 1;
+    var H = { size: 10, v: 'middle', h: 'center', fill: true };
+    var C = { size: 10, v: 'middle', h: 'center' };
+
+    textLine(ws, 1, LAST, '安全衛生管理活動の計画表', 16, true, 30);
+    textLine(ws, 2, LAST, '安全衛生管理活動の計画を次表に示す。', 11, false, 22, 'left');
+
+    box(ws, 3, 1, 4, 1, '項目　＼　工程', H);
+    // 年の見出し（同じ年の月をまとめる）
+    var start = 0;
+    while (start < n) {
+      var end = start;
+      while (end + 1 < n && months[end + 1].y === months[start].y) { end++; }
+      var ry = months[start].y - 2018;
+      var label = months[start].y ? ('令和' + (ry === 1 ? '元' : ry) + '年') : '令和　年';
+      // 1か月分しか幅がないときは短い表記にする
+      if (end === start && months[start].y) { label = 'R' + ry; }
+      box(ws, 3, 2 + start, 3, 2 + end, label, H);
+      start = end + 1;
+    }
+    months.forEach(function (mm, k) {
+      box(ws, 4, 2 + k, 4, 2 + k, mm.m ? (mm.m + '月') : '月', H);
+    });
+    ws.getRow(3).height = 20;
+    ws.getRow(4).height = 20;
+
+    var rows = [
+      ['特別安全朝礼\n（毎月1日）', function () { return true; }],
+      ['安全パトロール\n（随時）', function () { return false; }],
+      ['災害防止協議会\n（第2金曜日）', function () { return true; }],
+      ['安全大会\n（7/1～、12/1～）', function (mm) { return mm.m === 7 || mm.m === 12; }]
+    ];
+    rows.forEach(function (row, ri) {
+      var r = 5 + ri;
+      box(ws, r, 1, r, 1, row[0], C);
+      months.forEach(function (mm, k) {
+        box(ws, r, 2 + k, r, 2 + k, row[1](mm) ? '○' : '', C);
+      });
+      ws.getRow(r).height = 32;
+    });
+    textLine(ws, 10, LAST, '（○ は実施予定月。安全パトロール等は当該工事の計画に合わせて記入してください。）', 9, false, 18, 'left');
+    return ws;
+  }
+
+  /* 事故時等の連絡網（作成例 8.7）。連絡先の表を並べ、監督職員への連絡順は縦線でつなぐ */
+  function addRenraku(wb) {
+    var ws = portraitSheet(wb, '事故時等の連絡網');
+    ws.columns = [{ width: 10 }, { width: 17 }, { width: 3 }, { width: 10 }, { width: 17 }, { width: 3 },
+      { width: 10 }, { width: 17 }];
+    var H = { size: 10, v: 'middle', fill: true };
+    var C = { size: 10, v: 'middle' };
+
+    // 見出し＋項目行の表を置き、次の行番号を返す
+    function block(r, c, title, fields) {
+      box(ws, r, c, r, c + 1, title, H);
+      fields.forEach(function (f, i) {
+        box(ws, r + 1 + i, c, r + 1 + i, c, f, C);
+        box(ws, r + 1 + i, c + 1, r + 1 + i, c + 1, '', C);
+      });
+      return r + 1 + fields.length;
+    }
+
+    textLine(ws, 1, 8, '事故時等の連絡網', 16, true, 30);
+    textLine(ws, 2, 8, '事故時等の連絡先・体制図を次に示す。', 11, false, 22, 'left');
+
+    // 左: 関係官公署、所属部局、各課・室
+    box(ws, 3, 1, 3, 2, '関係官公署', { size: 10, v: 'middle', h: 'center', fill: true });
+    ['消防署', '労基署', '病院', '警察署', '電力会社', '水道局', '下水道局', 'ガス会社', '電話会社', ''].forEach(function (nm, i) {
+      box(ws, 4 + i, 1, 4 + i, 1, nm, C);
+      box(ws, 4 + i, 2, 4 + i, 2, 'TEL', C);
+    });
+    block(16, 1, '4. 所属部局', ['TEL', 'FAX']);
+    vline(ws, 19, 19, 1);
+    block(20, 1, '5. 各課、室', ['TEL', 'FAX', '', '']);
+
+    // 中央: 現場代理人 → 1.主任監督員 → 2.総括監督員 → 3.監督員
+    block(3, 4, '現場代理人', ['担当', 'TEL', 'FAX', '自宅']);
+    vline(ws, 8, 8, 4);
+    block(9, 4, '1. 主任監督員', ['担当', 'TEL', 'FAX', '自宅']);
+    vline(ws, 14, 14, 4);
+    block(15, 4, '2. 総括監督員', ['担当', '自宅']);
+    vline(ws, 18, 18, 4);
+    block(19, 4, '3. 監督員', ['担当', '自宅']);
+
+    // 右: 会社、協力会社、関係業者、監理業務受注者、相手庁
+    block(3, 7, '会社', ['担当', 'TEL', '夜間']);
+    block(8, 7, '協力会社', ['担当', 'TEL', '夜間']);
+    block(13, 7, '関係業者', ['担当', 'TEL', '夜間']);
+    block(18, 7, '監理業務受注者', ['担当', 'TEL']);
+    block(22, 7, '相手庁', ['担当', 'TEL']);
+
+    var r;
+    for (r = 3; r <= 25; r++) { ws.getRow(r).height = 20; }
+    ws.getRow(26).height = 10;
+    textLine(ws, 27, 8, '緊急時は 1.～5. の順位で速やかに連絡を行う。', 11, true, 22, 'left');
+    textLine(ws, 28, 8, '（現場代理人から関係官公署・会社・協力会社等への連絡線は省略しています。）', 9, false, 18, 'left');
+    return ws;
+  }
+
   /* ---------- 一覧表 (汎用) ---------- */
 
   function addTable(wb, name, title, info, heads, widths, rows, centerCols) {
@@ -717,6 +952,14 @@
     if (opt.cover !== false) { addCover(wb, info); }
     if (opt.gaiyo !== false) { addGaiyo(wb, info, chapters); }
     if (opt.soshiki !== false) { addSoshiki(wb, info); addHoan(wb); addHinshitsu(wb, info); }
+    if (opt.tenpu !== false) {
+      addBlank(wb, info, '全体工程表', '（このシートに全体工程表を作成してください。）');
+      addKoshu(wb);
+      addAnzenSoshiki(wb, info);
+      addAnzenKeikaku(wb, info);
+      addRenraku(wb);
+      addBlank(wb, info, '総合仮設計画', '（このシートに総合仮設計画図を作成してください。）');
+    }
     if (opt.list !== false) { addItemList(wb, info, chapters); }
     chapters.forEach(function (ch) { addChapter(wb, info, ch, opt.page !== false); });
     if (opt.docs !== false) { addDocList(wb, info, chapters); }
