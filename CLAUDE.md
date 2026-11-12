@@ -21,7 +21,7 @@
 | `source/` | 国交省 管理表（令和8年版）原本 xlsx 9ファイル |
 | `vendor/exceljs.min.js` | ExcelJS 4.4.0（MIT） |
 | `sw.js` / `manifest.webmanifest` / `icons/` | PWA 関連 |
-| `docs/honsho/` | 書籍「電気設備工事の施工管理」の読み取り記録（第Ⅰ〜Ⅲ編・資料。仕様検討の参照用） |
+| `docs/honsho/` | 書籍「電気設備工事の施工管理」の読み取り記録（第Ⅰ〜Ⅲ編・資料。仕様検討の参照用）。確認・保留事項は `00_kakunin.md` |
 
 ## コーディング規約（必須）
 
