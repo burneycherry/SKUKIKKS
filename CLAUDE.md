@@ -23,6 +23,7 @@
 | `vendor/exceljs.min.js` | ExcelJS 4.4.0（MIT） |
 | `sw.js` / `manifest.webmanifest` / `icons/` | PWA 関連 |
 | `docs/honsho/` | 書籍「電気設備工事の施工管理」の読み取り記録（第Ⅰ〜Ⅲ編・資料。仕様検討の参照用）。確認・保留事項は `00_kakunin.md` |
+| `docs/hyojunzu/` | 国交省「標準図（電気設備工事編）令和7年版」PDF の URL とページ索引（図の参照用。「電力28」等の番号との対応） |
 
 ## コーディング規約（必須）
 
