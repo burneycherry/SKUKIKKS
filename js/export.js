@@ -1,6 +1,6 @@
 /* 施工計画書 Excel(xlsx) 出力
  * 依存: vendor/exceljs.min.js (window.ExcelJS)
- * 公開: window.SekokanExport = { build, collect, parseDocs, wareki }
+ * 公開: window.SekokanExport = { build, collect, parseDocs, wareki, KOSHU }
  */
 (function () {
   'use strict';
@@ -326,6 +326,7 @@
       r++;
     }
 
+    if (!chapters.length) { return ws; }
     ws.getRow(r).height = 14;
     r++;
     textLine(ws, r, LAST, '管理表（品質計画）の対象工事種目', 11, false, 22, 'left');
@@ -943,7 +944,10 @@
     var info = state.info || {};
     var opt = state.opt || {};
     var chapters = collect(data, state.sel || {});
-    if (!chapters.length) { return Promise.reject(new Error('工事種目が選択されていません')); }
+    // 管理表を出力しない書類（総合施工計画書）は、工事種目を選んでいなくても作成できる
+    if (!chapters.length && opt.kanri !== false) {
+      return Promise.reject(new Error('工事種目が選択されていません'));
+    }
 
     var wb = new ExcelJS.Workbook();
     wb.creator = info.juchu || 'sekokan';
@@ -960,10 +964,15 @@
       addRenraku(wb);
       addBlank(wb, info, '総合仮設計画', '（このシートに総合仮設計画図を作成してください。）');
     }
-    if (opt.list !== false) { addItemList(wb, info, chapters); }
-    chapters.forEach(function (ch) { addChapter(wb, info, ch, opt.page !== false); });
-    if (opt.docs !== false) { addDocList(wb, info, chapters); }
-    if (opt.photos !== false) { addPhotoList(wb, info, chapters); }
+    if (chapters.length) {
+      if (opt.list !== false) { addItemList(wb, info, chapters); }
+      if (opt.kanri !== false) {
+        chapters.forEach(function (ch) { addChapter(wb, info, ch, opt.page !== false); });
+      }
+      if (opt.docs !== false) { addDocList(wb, info, chapters); }
+      if (opt.photos !== false) { addPhotoList(wb, info, chapters); }
+    }
+    if (!wb.worksheets.length) { return Promise.reject(new Error('出力するシートがありません。出力内容を選んでください')); }
 
     return wb.xlsx.writeBuffer().then(function (buf) {
       return new Blob([buf], {
@@ -976,6 +985,7 @@
     build: build,
     collect: collect,
     parseDocs: parseDocs,
-    wareki: wareki
+    wareki: wareki,
+    KOSHU: KOSHU
   };
 })();

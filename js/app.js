@@ -9,11 +9,30 @@
   var INFO_KEYS = ['docTitle', 'kojiName', 'basho', 'kokiFrom', 'kokiTo', 'hacchu',
     'juchu', 'dairinin', 'gijutsu', 'sakuseisha', 'sakuseiBi',
     'kojiKanri', 'kanri', 'sekkei', 'yoto', 'chiiki', 'kozo', 'kibo', 'shobo', 'bunrui'];
-  var OPT_KEYS = ['cover', 'gaiyo', 'soshiki', 'tenpu', 'list', 'docs', 'photos', 'page'];
+  var OPT_KEYS = ['cover', 'gaiyo', 'soshiki', 'tenpu', 'kanri', 'list', 'docs', 'photos', 'page'];
   // 章内で最初の項目を選んだときに一緒に選ぶ共通項目
   var COMMON = ['共通事項', '機材の試験', '施工の立会い及び試験', '機器及び完成設備'];
 
-  var state = { info: {}, sel: {}, opt: {}, infoOpen: true };
+  // 書類の種類ごとの出力内容の初期値（切り替えたときに設定する。あとから個別に変更できる）
+  var DOC_TYPES = {
+    sogo: {
+      title: '総合施工計画書',
+      hint: '表紙・工事概要・組織表・添付シートを出力します。管理表は含めません（工事種目の選択は不要）。',
+      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: true, kanri: false, list: false, docs: false, photos: false }
+    },
+    koshu: {
+      title: '',
+      hint: '工種ごとに作成します。表紙と、選択した工事種目の管理表（品質計画）・資料一覧・写真一覧を出力します。',
+      opt: { cover: true, gaiyo: false, soshiki: false, tenpu: false, kanri: true, list: true, docs: true, photos: true }
+    },
+    kan: {
+      title: '施工計画書',
+      hint: '簡略的な工事向け。表紙・工事概要・組織表と管理表を1冊にまとめて出力します。',
+      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: false, kanri: true, list: true, docs: true, photos: true }
+    }
+  };
+
+  var state = { info: {}, sel: {}, opt: {}, infoOpen: true, docType: '', koshu: 0 };
   var ui = { chap: {}, item: {}, group: {} };
   var lastFile = null;   // { blob, name, url }
 
@@ -45,6 +64,8 @@
       state.sel = saved.sel || {};
       state.opt = saved.opt || {};
       state.infoOpen = saved.infoOpen !== false;
+      state.docType = DOC_TYPES[saved.docType] ? saved.docType : '';
+      state.koshu = Number(saved.koshu) || 0;
     } else {
       // 初回: ⑴一般共通事項はどの工事にも該当するため選択済みにする
       DATA.chapters[0].items.forEach(function (it) {
@@ -53,6 +74,11 @@
     }
     if (!state.info.docTitle) { state.info.docTitle = '施工計画書'; }
     if (!state.info.sakuseiBi) { state.info.sakuseiBi = todayIso(); }
+    // 書類の種類が未保存（初回、または旧版からの引き継ぎ）のときは「施工計画書（簡略）」にする
+    if (!state.docType) {
+      state.docType = 'kan';
+      Object.keys(DOC_TYPES.kan.opt).forEach(function (k) { state.opt[k] = DOC_TYPES.kan.opt[k]; });
+    }
     OPT_KEYS.forEach(function (k) {
       if (state.opt[k] === undefined) { state.opt[k] = true; }
     });
@@ -117,10 +143,11 @@
       totalItems += on;
       if (on > 0) { totalChaps++; }
     });
+    var needSel = state.opt.kanri !== false;   // 管理表を出力する書類は工事種目の選択が必要
     $('summary').textContent = totalItems
       ? (totalChaps + '工事種目・' + totalItems + '項目 を選択中（管理項目 ' + totalRows + '行）')
-      : '工事種目が選択されていません';
-    $('exportBtn').disabled = totalItems === 0;
+      : (needSel ? '工事種目が選択されていません' : '工事種目の選択なしで出力できます');
+    $('exportBtn').disabled = needSel && totalItems === 0;
   }
 
   function changed() {
@@ -274,6 +301,66 @@
     $('noHit').hidden = any;
   }
 
+  /* ---------- 書類の種類 ---------- */
+
+  function koshuList() { return window.SekokanExport.KOSHU || []; }
+
+  // 画面の表示を state.docType に合わせる
+  function showDocType() {
+    var btns = $('docType').querySelectorAll('button');
+    var i;
+    for (i = 0; i < btns.length; i++) {
+      var on = btns[i].getAttribute('data-type') === state.docType;
+      btns[i].className = on ? 'seg-btn on' : 'seg-btn';
+      btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    $('docTypeHint').textContent = DOC_TYPES[state.docType].hint;
+    $('koshuField').hidden = state.docType !== 'koshu';
+  }
+
+  // 書類の種類を切り替え、書類名と出力内容を初期値にする
+  function applyDocType(type) {
+    var def = DOC_TYPES[type];
+    state.docType = type;
+    Object.keys(def.opt).forEach(function (k) {
+      state.opt[k] = def.opt[k];
+      $('o_' + k).checked = def.opt[k];
+    });
+    var title = def.title;
+    if (type === 'koshu') {
+      var list = koshuList();
+      title = state.koshu < list.length ? list[state.koshu] : '工種別施工計画書';
+    }
+    state.info.docTitle = title;
+    $('f_docTitle').value = title;
+    showDocType();
+    changed();
+  }
+
+  function bindDocType() {
+    var sel = $('f_koshu');
+    koshuList().forEach(function (name, i) {
+      var o = el('option', null, name);
+      o.value = String(i);
+      sel.appendChild(o);
+    });
+    var other = el('option', null, 'その他（書類名を入力）');
+    other.value = String(koshuList().length);
+    sel.appendChild(other);
+    sel.value = String(state.koshu);
+    sel.addEventListener('change', function () {
+      state.koshu = Number(sel.value) || 0;
+      applyDocType('koshu');
+    });
+    var btns = $('docType').querySelectorAll('button');
+    var i;
+    function bind(b) {
+      b.addEventListener('click', function () { applyDocType(b.getAttribute('data-type')); });
+    }
+    for (i = 0; i < btns.length; i++) { bind(btns[i]); }
+    showDocType();
+  }
+
   /* ---------- 入力欄 ---------- */
 
   function bindInputs() {
@@ -291,10 +378,12 @@
       cb.checked = state.opt[k] !== false;
       cb.addEventListener('change', function () {
         state.opt[k] = cb.checked;
+        refresh();
         save();
         hideResult();
       });
     });
+    bindDocType();
     var toggle = $('infoToggle');
     var body = $('infoBody');
     function setOpen(open) {

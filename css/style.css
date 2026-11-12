@@ -82,7 +82,7 @@ button.card-head { cursor: pointer; }
 
 .field { display: block; margin-bottom: 10px; flex: 1; min-width: 0; }
 .field > span { display: block; font-size: 12px; color: #566170; margin-bottom: 3px; }
-.field input {
+.field input, .field select {
   display: block;
   width: 100%;
   min-height: 44px;
@@ -96,10 +96,29 @@ button.card-head { cursor: pointer; }
   -webkit-appearance: none;
   appearance: none;
 }
-.field input:focus, #filter:focus { outline: 2px solid #1f5fa8; outline-offset: 1px; }
+.field input:focus, .field select:focus, #filter:focus { outline: 2px solid #1f5fa8; outline-offset: 1px; }
+.field[hidden] { display: none; }
 .field-row { display: flex; gap: 10px; }
 .subhead { margin: 14px 0 8px; padding-top: 12px; border-top: 1px solid #dde2ea; font-size: 13px; font-weight: 700; color: #3d4a5c; }
 
+.subhead.first { margin-top: 0; padding-top: 0; border-top: 0; }
+.seg { display: flex; gap: 6px; margin-bottom: 6px; }
+.seg-btn {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 4px;
+  border: 1px solid #1f5fa8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f5fa8;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.seg-btn.on { background: #1f5fa8; color: #ffffff; }
 .hint { margin: 4px 0 10px; font-size: 13px; color: #566170; }
 .source { margin: 4px 4px 0; font-size: 11px; color: #6b7686; }
 .error {
@@ -282,7 +301,9 @@ input[type="checkbox"] {
   .card, .chap, .bar { border-color: #313a47; }
   .field > span, .hint, .count, .item-sub, .group small, .source { color: #a3adba; }
   .subhead { color: #c5cdd8; border-top-color: #313a47; }
-  .field input, #filter { background: #12161c; color: #e6e9ee; border-color: #414c5c; }
+  .field input, .field select, #filter { background: #12161c; color: #e6e9ee; border-color: #414c5c; }
+  .seg-btn { background: #1b212a; color: #8fbdf0; border-color: #8fbdf0; }
+  .seg-btn.on { background: #8fbdf0; color: #12161c; }
   .btn.ghost { background: #1b212a; color: #8fbdf0; border-color: #8fbdf0; }
   .chap-head { background: #222a35; }
   .chap-btn { color: #e6e9ee; }
