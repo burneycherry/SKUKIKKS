@@ -50,6 +50,25 @@
         <label class="field"><span>作成者</span><input type="text" id="f_sakuseisha" autocomplete="off"></label>
         <label class="field"><span>作成年月日</span><input type="date" id="f_sakuseiBi"></label>
       </div>
+      <p class="subhead">工事概要（任意。未入力の欄は空欄で出力）</p>
+      <label class="field"><span>工事監理（発注者の部署）</span>
+        <input type="text" id="f_kojiKanri" autocomplete="off" placeholder="例）○○地方整備局 ○○営繕事務所"></label>
+      <label class="field"><span>監理（工事監理者）</span>
+        <input type="text" id="f_kanri" autocomplete="off" placeholder="例）○○設計事務所"></label>
+      <label class="field"><span>設計者</span>
+        <input type="text" id="f_sekkei" autocomplete="off"></label>
+      <div class="field-row">
+        <label class="field"><span>建物用途</span><input type="text" id="f_yoto" autocomplete="off" placeholder="例）事務庁舎"></label>
+        <label class="field"><span>構造</span><input type="text" id="f_kozo" autocomplete="off" placeholder="例）鉄筋コンクリート造"></label>
+      </div>
+      <label class="field"><span>地域地区等</span>
+        <input type="text" id="f_chiiki" autocomplete="off" placeholder="例）近隣商業地域、準防火地域"></label>
+      <label class="field"><span>規模</span>
+        <input type="text" id="f_kibo" autocomplete="off" placeholder="例）地上5階 塔屋1階 延床面積3,000m2"></label>
+      <div class="field-row">
+        <label class="field"><span>消防法上の区分</span><input type="text" id="f_shobo" autocomplete="off" placeholder="例）別表第一 15項"></label>
+        <label class="field"><span>施設の分類</span><input type="text" id="f_bunrui" autocomplete="off" placeholder="例）一般の施設"></label>
+      </div>
     </div>
   </section>
 
@@ -73,7 +92,9 @@
       <span class="step">3</span><span class="card-title">出力内容</span>
     </div>
     <div class="card-body">
-      <label class="check"><input type="checkbox" id="o_cover"><span>表紙</span></label>
+      <label class="check"><input type="checkbox" id="o_cover"><span>表紙（押印欄つき）</span></label>
+      <label class="check"><input type="checkbox" id="o_gaiyo"><span>工事概要</span></label>
+      <label class="check"><input type="checkbox" id="o_soshiki"><span>組織表・電気保安体制</span></label>
       <label class="check"><input type="checkbox" id="o_list"><span>対象工事種目一覧</span></label>
       <label class="check"><input type="checkbox" id="o_docs"><span>作成・提出資料一覧</span></label>
       <label class="check"><input type="checkbox" id="o_photos"><span>写真撮影項目一覧</span></label>

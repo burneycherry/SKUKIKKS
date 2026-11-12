@@ -127,129 +127,317 @@
     return ps;
   }
 
-  /* ---------- 表紙 ---------- */
+  /* ---------- 表紙・工事概要・組織表 共通 ---------- */
 
-  function addCover(wb, info, chapters) {
-    var ws = wb.addWorksheet('表紙', {
+  // A4縦1ページのシート
+  function portraitSheet(wb, name) {
+    return wb.addWorksheet(name, {
       pageSetup: {
         paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 1,
         horizontalCentered: true,
         margins: { left: 0.7, right: 0.7, top: 0.8, bottom: 0.8, header: 0.3, footer: 0.3 }
       }
     });
-    // B〜E の4列を同じ幅にして、押印欄（4人分）と工事情報の表の両方に使う
+  }
+
+  // 枠なしの1行（左端から last 列まで結合）
+  function textLine(ws, row, last, text, size, bold, height, align) {
+    ws.mergeCells(row, 1, row, last);
+    var c = ws.getCell(row, 1);
+    c.value = text;
+    c.font = { name: FONT, size: size, bold: !!bold };
+    c.alignment = { horizontal: align || 'center', vertical: 'middle', wrapText: true };
+    ws.getRow(row).height = height;
+  }
+
+  // 枠付きのセル（複数セルにまたがる場合は結合する）
+  function box(ws, r1, c1, r2, c2, text, opt) {
+    var rr, cc;
+    for (rr = r1; rr <= r2; rr++) {
+      for (cc = c1; cc <= c2; cc++) { style(ws.getCell(rr, cc), opt); }
+    }
+    if (r1 !== r2 || c1 !== c2) { ws.mergeCells(r1, c1, r2, c2); }
+    ws.getCell(r1, c1).value = text;
+  }
+
+  // 未入力の欄に入れる記号（Excel 上で書き換えて使う）
+  function orMaru(v, maru) { return v ? v : (maru || '○○ ○○'); }
+
+  /* ---------- 表紙（書籍 第Ⅲ編 2.2 総合施工計画書作成例の表紙にならう） ---------- */
+
+  function addCover(wb, info) {
+    var ws = portraitSheet(wb, '表紙');
+    // B〜E の4列を同じ幅にして、押印欄（4人分）に使う
     ws.columns = [{ width: 3 }, { width: 19.5 }, { width: 19.5 }, { width: 19.5 }, { width: 19.5 }, { width: 3 }];
     var LAST = 6;
-
-    function line(row, text, size, bold, height, align) {
-      ws.mergeCells(row, 1, row, LAST);
-      var c = ws.getCell(row, 1);
-      c.value = text;
-      c.font = { name: FONT, size: size, bold: bold };
-      c.alignment = { horizontal: align || 'center', vertical: 'middle', wrapText: true };
-      ws.getRow(row).height = height;
-    }
-
-    // 枠付きのセル（複数セルにまたがる場合は結合する）
-    function box(r1, c1, r2, c2, text, opt) {
-      var rr, cc;
-      for (rr = r1; rr <= r2; rr++) {
-        for (cc = c1; cc <= c2; cc++) { style(ws.getCell(rr, cc), opt); }
-      }
-      if (r1 !== r2 || c1 !== c2) { ws.mergeCells(r1, c1, r2, c2); }
-      ws.getCell(r1, c1).value = text;
-    }
-
-    ws.getRow(1).height = 20;
-    ws.getRow(2).height = 20;
-    line(3, info.docTitle || '施工計画書', 32, true, 60);
-    line(4, '（電気設備工事）', 16, false, 32);
-    ws.getRow(5).height = 24;
-
-    var rows = [
-      ['工事名', info.kojiName],
-      ['工事場所', info.basho],
-      ['工期', (info.kokiFrom || info.kokiTo)
-        ? (wareki(info.kokiFrom) + ' ～ ' + wareki(info.kokiTo)) : ''],
-      ['発注者', info.hacchu],
-      ['受注者', info.juchu],
-      ['現場代理人', info.dairinin],
-      ['監理(主任)技術者', info.gijutsu],
-      ['作成者', info.sakuseisha],
-      ['作成年月日', wareki(info.sakuseiBi)]
-    ];
-    var r = 6;
-    rows.forEach(function (kv) {
-      box(r, 2, r, 2, kv[0], { size: 12, v: 'middle', h: 'center', fill: true });
-      box(r, 3, r, 5, kv[1] || '', { size: 12, v: 'middle' });
-      ws.getRow(r).height = Math.max(26, lineCount(kv[1] || '', 58, 12) * 17 + 8);
-      r++;
-    });
-
-    /* 押印欄（書籍「電気設備工事の施工管理」第Ⅲ編 2.2 総合施工計画書作成例の表紙にならう） */
     var HEADOPT = { size: 11, v: 'middle', h: 'center', fill: true };
     var DATEOPT = { size: 10, v: 'middle', h: 'center' };
     var DATE = '年　　月　　日';
-    var STAMP = 58;        // 押印スペースの高さ(pt)
+    var STAMP = 64;        // 押印スペースの高さ(pt)
     var c;
 
-    ws.getRow(r).height = 14;
-    r++;
-    line(r, '　発注者・工事監理者', 11, false, 20, 'left');
-    r++;
-    box(r, 2, r, 3, '受理・承諾', HEADOPT);
-    box(r, 4, r, 5, '確認', HEADOPT);
-    ws.getRow(r).height = 20;
+    ws.getRow(1).height = 50;
+    textLine(ws, 2, LAST, '工事名　　' + (info.kojiName || ''), 18, false, 36);
+    ws.getRow(3).height = 50;
+    textLine(ws, 4, LAST, info.docTitle || '施工計画書', 34, true, 64);
+    ws.getRow(5).height = 70;
+
+    textLine(ws, 6, LAST, '　工事監理　' + (info.kojiKanri || ''), 12, false, 22, 'left');
+    textLine(ws, 7, LAST, '　監　　理　' + (info.kanri || ''), 12, false, 22, 'left');
+    ws.getRow(8).height = 8;
+
+    var r = 9;
+    box(ws, r, 2, r, 3, '受理・承諾', HEADOPT);
+    box(ws, r, 4, r, 5, '確認', HEADOPT);
+    ws.getRow(r).height = 22;
     r++;
     ['主任監督員', '監督員', '管理技術者※', '担当者'].forEach(function (t, i) {
-      box(r, 2 + i, r, 2 + i, t, HEADOPT);
+      box(ws, r, 2 + i, r, 2 + i, t, HEADOPT);
     });
-    ws.getRow(r).height = 20;
+    ws.getRow(r).height = 22;
     r++;
-    for (c = 2; c <= 5; c++) { box(r, c, r, c, DATE, DATEOPT); }
-    ws.getRow(r).height = 20;
+    for (c = 2; c <= 5; c++) { box(ws, r, c, r, c, DATE, DATEOPT); }
+    ws.getRow(r).height = 22;
     r++;
     // 受理・承諾側は押印欄の下に注記の行が入る。確認側は注記の行まで押印欄にする
-    box(r, 2, r, 2, '', {});
-    box(r, 3, r, 3, '', {});
-    box(r, 4, r + 1, 4, '', {});
-    box(r, 5, r + 1, 5, '', {});
+    box(ws, r, 2, r, 2, '', {});
+    box(ws, r, 3, r, 3, '', {});
+    box(ws, r, 4, r + 1, 4, '', {});
+    box(ws, r, 5, r + 1, 5, '', {});
     ws.getRow(r).height = STAMP - 18;
     r++;
-    box(r, 2, r, 3, '承諾は品質計画に係る部分', { size: 9, v: 'middle', h: 'center' });
+    box(ws, r, 2, r, 3, '承諾は品質計画に係る部分', { size: 9, v: 'middle', h: 'center' });
     ws.getRow(r).height = 18;
     r++;
-    line(r, '　※「管理技術者」は、工事監理業務の受託者の代表となる工事監理者', 9, false, 16, 'left');
+    textLine(ws, r, LAST, '　※「管理技術者」は、工事監理業務の受託者の代表となる工事監理者', 9, false, 16, 'left');
     r++;
 
-    ws.getRow(r).height = 10;
+    ws.getRow(r).height = 36;
     r++;
-    line(r, '　受注者', 11, false, 20, 'left');
+    textLine(ws, r, LAST, '　受注者　' + (info.juchu || ''), 12, false, 22, 'left');
+    r++;
+    ws.getRow(r).height = 8;
     r++;
     ['現場代理人', '監理(主任)技術者', '工事担当者', '工事担当者'].forEach(function (t, i) {
-      box(r, 2 + i, r, 2 + i, t, HEADOPT);
+      box(ws, r, 2 + i, r, 2 + i, t, HEADOPT);
     });
-    ws.getRow(r).height = 20;
+    ws.getRow(r).height = 22;
     r++;
-    for (c = 2; c <= 5; c++) { box(r, c, r, c, DATE, DATEOPT); }
-    ws.getRow(r).height = 20;
+    for (c = 2; c <= 5; c++) { box(ws, r, c, r, c, DATE, DATEOPT); }
+    ws.getRow(r).height = 22;
     r++;
-    for (c = 2; c <= 5; c++) { box(r, c, r, c, '', {}); }
+    for (c = 2; c <= 5; c++) { box(ws, r, c, r, c, '', {}); }
     ws.getRow(r).height = STAMP;
     r++;
 
-    ws.getRow(r).height = 16;
+    ws.getRow(r).height = 30;
     r++;
-    box(r, 2, r, 5, '対象工事種目', { size: 11, v: 'middle', h: 'center', fill: true });
-    ws.getRow(r).height = 22;
+    var tail = [];
+    if (info.sakuseiBi) { tail.push('作成年月日　' + wareki(info.sakuseiBi)); }
+    if (info.sakuseisha) { tail.push('作成者　' + info.sakuseisha); }
+    if (tail.length) { textLine(ws, r, LAST, tail.join('　　　') + '　', 11, false, 22, 'right'); }
+    return ws;
+  }
+
+  /* ---------- 工事概要（作成例「2. 工事概要」①〜⑯にならう） ---------- */
+
+  // 選択した工事種目(章)から、電気設備概要の表に並べる設備種目を決める
+  var SETSUBI = {
+    3: ['電灯設備', '動力設備'], 4: ['受変電設備'], 5: ['電力貯蔵設備'], 6: ['発電設備'],
+    7: ['通信・情報設備'], 8: ['中央監視制御設備'], 9: ['医療関係設備']
+  };
+
+  function addGaiyo(wb, info, chapters) {
+    var ws = portraitSheet(wb, '工事概要');
+    ws.columns = [{ width: 4 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 28 }];
+    var LAST = 5;
+    var HEADOPT = { size: 10, v: 'middle', h: 'center', fill: true };
+    var CELLOPT = { size: 10, v: 'middle' };
+
+    textLine(ws, 1, LAST, '工事概要', 16, true, 30);
+    textLine(ws, 2, LAST, '当該工事の概要を下記①～⑯に記す。', 11, false, 22, 'left');
+
+    var koki = (info.kokiFrom || info.kokiTo)
+      ? ('自 ' + wareki(info.kokiFrom) + '　～　至 ' + wareki(info.kokiTo)) : '';
+    var rows = [
+      ['①', '工事名称', info.kojiName],
+      ['②', '工事場所', info.basho],
+      ['③', '発注者', info.hacchu],
+      ['④', '工事監理', info.kojiKanri],
+      ['⑤', '監理', info.kanri],
+      ['⑥', '受注者', info.juchu],
+      ['⑦', '設計者', info.sekkei],
+      ['⑧', '工期', koki],
+      ['⑨', '建物用途', info.yoto],
+      ['⑩', '地域地区等', info.chiiki],
+      ['⑪', '構造', info.kozo],
+      ['⑫', '規模', info.kibo],
+      ['⑬', '消防法上の区分', info.shobo],
+      ['⑭', '施設の分類', info.bunrui]
+    ];
+    var r = 3;
+    rows.forEach(function (row) {
+      box(ws, r, 1, r, 1, row[0], { size: 11, v: 'middle', h: 'center' });
+      box(ws, r, 2, r, 2, row[1], { size: 11, v: 'middle', fill: true });
+      box(ws, r, 3, r, 5, row[2] || '', { size: 11, v: 'middle' });
+      ws.getRow(r).height = Math.max(24, lineCount(row[2] || '', 62, 11) * 16 + 8);
+      r++;
+    });
+
+    ws.getRow(r).height = 10;
+    r++;
+    textLine(ws, r, LAST, '⑮　電気設備概要', 11, false, 22, 'left');
+    r++;
+    box(ws, r, 1, r, 2, '設備種目', HEADOPT);
+    ['方式等', '機器名等', '形式、容量等'].forEach(function (t, i) {
+      box(ws, r, 3 + i, r, 3 + i, t, HEADOPT);
+    });
+    ws.getRow(r).height = 20;
+    r++;
+    var setsubi = [];
+    chapters.forEach(function (ch) {
+      (SETSUBI[ch.id] || []).forEach(function (n) { setsubi.push(n); });
+    });
+    if (!setsubi.length) { setsubi = ['', '', '']; }
+    setsubi.forEach(function (n) {
+      box(ws, r, 1, r, 2, n, CELLOPT);
+      box(ws, r, 3, r, 3, '', CELLOPT);
+      box(ws, r, 4, r, 4, '', CELLOPT);
+      box(ws, r, 5, r, 5, '', CELLOPT);
+      ws.getRow(r).height = 26;
+      r++;
+    });
+
+    ws.getRow(r).height = 10;
+    r++;
+    textLine(ws, r, LAST, '⑯　機械設備概要', 11, false, 22, 'left');
+    r++;
+    box(ws, r, 1, r, 2, '主設備', HEADOPT);
+    box(ws, r, 3, r, 3, '方式等', HEADOPT);
+    box(ws, r, 4, r, 5, '主要機器名等', HEADOPT);
+    ws.getRow(r).height = 20;
+    r++;
+    var k;
+    for (k = 0; k < 2; k++) {
+      box(ws, r, 1, r, 2, '', CELLOPT);
+      box(ws, r, 3, r, 3, '', CELLOPT);
+      box(ws, r, 4, r, 5, '', CELLOPT);
+      ws.getRow(r).height = 26;
+      r++;
+    }
+
+    ws.getRow(r).height = 14;
+    r++;
+    textLine(ws, r, LAST, '管理表（品質計画）の対象工事種目', 11, false, 22, 'left');
     r++;
     var names = chapters.map(function (ch) { return ch.title.replace(/　/g, ' '); });
-    box(r, 2, r, 5, names.join('\n'), { size: 11, v: 'middle' });
-    ws.getRow(r).height = Math.max(26, names.length * 15 + 8);
-    r += 2;
+    box(ws, r, 1, r, 5, names.join('　／　'), { size: 10, v: 'middle' });
+    ws.getRow(r).height = Math.max(24, lineCount(names.join('　／　'), 84, 10) * 15 + 8);
+    r++;
+    textLine(ws, r, LAST,
+      '管理表は、国土交通省「電気設備工事 施工管理 管理表（令和8年版）」から対象の工事種目を抜粋したものです。',
+      9, false, 20, 'left');
+    return ws;
+  }
 
-    line(r, '本書の管理表は、国土交通省「電気設備工事 施工管理 管理表（令和8年版）」から対象の工事種目を抜粋したものです。',
-      9, false, 30);
+  /* ---------- 組織表・電気保安体制（作成例「3. 受注者の組織」にならう） ---------- */
+
+  // 図の線。セルの罫線で縦線・横線を引く
+  function vline(ws, r1, r2, col) {          // col 列の右側に縦線
+    var rr;
+    for (rr = r1; rr <= r2; rr++) {
+      var c = ws.getCell(rr, col);
+      var b = c.border || {};
+      c.border = { top: b.top, left: b.left, bottom: b.bottom, right: THIN };
+    }
+  }
+  function hline(ws, row, c1, c2) {          // row 行の上側に横線
+    var cc;
+    for (cc = c1; cc <= c2; cc++) {
+      var c = ws.getCell(row, cc);
+      var b = c.border || {};
+      c.border = { top: THIN, left: b.left, bottom: b.bottom, right: b.right };
+    }
+  }
+
+  function addSoshiki(wb, info) {
+    var ws = portraitSheet(wb, '組織表');
+    var cols = [];
+    var i;
+    for (i = 0; i < 14; i++) { cols.push({ width: 6.2 }); }
+    ws.columns = cols;
+    var LAST = 14;
+    var B = { size: 11, v: 'middle', h: 'center' };
+    var H = 20;
+    var r;
+
+    textLine(ws, 1, LAST, '受注者の組織', 16, true, 30);
+    textLine(ws, 2, LAST, '当該工事の組織表を次に示す。', 11, false, 22, 'left');
+    textLine(ws, 3, LAST, '社内組織', 11, true, 22, 'left');
+
+    box(ws, 4, 5, 5, 10, orMaru(info.juchu, '○○○○電気工事株式会社') + '\n代表取締役社長　○○ ○○', B);
+    vline(ws, 6, 6, 7);
+    hline(ws, 7, 3, 12);
+    vline(ws, 7, 7, 2); vline(ws, 7, 7, 7); vline(ws, 7, 7, 12);
+    box(ws, 8, 1, 10, 4, '○○部\n部長　○○ ○○\n課長　○○ ○○', B);
+    box(ws, 8, 6, 10, 9, '○○部\n部長　○○ ○○\n課長　○○ ○○', B);
+    box(ws, 8, 11, 10, 14, '○○部\n部長　○○ ○○', B);
+    vline(ws, 11, 11, 7);
+
+    // 「現場の組織」の見出し行。縦線を通すため結合は左4列だけにする
+    ws.mergeCells(12, 1, 12, 4);
+    ws.getCell(12, 1).value = '現場の組織';
+    ws.getCell(12, 1).font = { name: FONT, size: 11, bold: true };
+    ws.getCell(12, 1).alignment = { vertical: 'middle' };
+    vline(ws, 12, 12, 7);
+
+    box(ws, 13, 6, 14, 9, '現場代理人\n' + orMaru(info.dairinin), B);
+    vline(ws, 15, 15, 7);
+    box(ws, 16, 1, 17, 5, '監理(主任)技術者（注）\n' + orMaru(info.gijutsu), B);
+    box(ws, 16, 10, 17, 14, '電気保安技術者\n○○ ○○', B);
+    hline(ws, 17, 6, 9);
+    vline(ws, 16, 17, 7);
+    vline(ws, 18, 18, 7);
+    hline(ws, 19, 4, 11);
+    vline(ws, 19, 19, 3); vline(ws, 19, 19, 11);
+    box(ws, 20, 2, 21, 5, '○○担当者\n○○ ○○', B);
+    box(ws, 20, 10, 21, 13, '○○担当者\n○○ ○○', B);
+    vline(ws, 22, 22, 11);
+    box(ws, 23, 10, 24, 13, '職長　○○ ○○', B);
+    box(ws, 23, 1, 24, 8,
+      '（注）建設業法第26条第3項第2号の規定により監理技術者補佐を専任で置く場合は組織表に記載する。',
+      { size: 9, v: 'middle' });
+
+    for (r = 4; r <= 24; r++) { ws.getRow(r).height = H; }
+    ws.getRow(12).height = 24;
+    ws.getRow(25).height = 10;
+    textLine(ws, 26, LAST, '※下請業者との関係は、「施工体制台帳」で管理する。', 10, false, 20, 'left');
+    textLine(ws, 27, LAST, '（○○ の箇所は、部署名・氏名に書き換えてください。枠はセルの罫線です。）', 9, false, 18, 'left');
+    return ws;
+  }
+
+  function addHoan(wb) {
+    var ws = portraitSheet(wb, '電気保安体制');
+    var cols = [];
+    var i;
+    for (i = 0; i < 14; i++) { cols.push({ width: 6.2 }); }
+    ws.columns = cols;
+    var LAST = 14;
+    var B = { size: 11, v: 'middle', h: 'center' };
+    var r;
+
+    textLine(ws, 1, LAST, '電気保安体制', 16, true, 30);
+    ws.getRow(2).height = 14;
+    box(ws, 3, 5, 4, 10, '電気主任技術者\n（発注者）', B);
+    vline(ws, 5, 6, 7);
+    box(ws, 7, 5, 8, 10, '工事担当技術者\n（監督職員）', B);
+    vline(ws, 9, 10, 7);
+    box(ws, 11, 5, 12, 10, '電気保安技術者\n○○ ○○', B);
+    for (r = 3; r <= 12; r++) { ws.getRow(r).height = 20; }
+    ws.getRow(13).height = 14;
+    textLine(ws, 14, LAST,
+      '電気保安技術者は、発注者側で定めた電気主任技術者の業務を補佐する監督職員の指示に従い、' +
+      '電気工作物の保安業務を行う。（「標仕」第1編 1.3.2）', 10, false, 34, 'left');
     return ws;
   }
 
@@ -490,7 +678,9 @@
     wb.creator = info.juchu || 'sekokan';
     wb.created = new Date();
 
-    if (opt.cover !== false) { addCover(wb, info, chapters); }
+    if (opt.cover !== false) { addCover(wb, info); }
+    if (opt.gaiyo !== false) { addGaiyo(wb, info, chapters); }
+    if (opt.soshiki !== false) { addSoshiki(wb, info); addHoan(wb); }
     if (opt.list !== false) { addItemList(wb, info, chapters); }
     chapters.forEach(function (ch) { addChapter(wb, info, ch, opt.page !== false); });
     if (opt.docs !== false) { addDocList(wb, info, chapters); }

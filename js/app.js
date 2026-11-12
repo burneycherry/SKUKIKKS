@@ -7,8 +7,9 @@
   var DATA = window.KANRI_DATA;
   var STORE_KEY = 'sekokan.v1';
   var INFO_KEYS = ['docTitle', 'kojiName', 'basho', 'kokiFrom', 'kokiTo', 'hacchu',
-    'juchu', 'dairinin', 'gijutsu', 'sakuseisha', 'sakuseiBi'];
-  var OPT_KEYS = ['cover', 'list', 'docs', 'photos', 'page'];
+    'juchu', 'dairinin', 'gijutsu', 'sakuseisha', 'sakuseiBi',
+    'kojiKanri', 'kanri', 'sekkei', 'yoto', 'chiiki', 'kozo', 'kibo', 'shobo', 'bunrui'];
+  var OPT_KEYS = ['cover', 'gaiyo', 'soshiki', 'list', 'docs', 'photos', 'page'];
   // 章内で最初の項目を選んだときに一緒に選ぶ共通項目
   var COMMON = ['共通事項', '機材の試験', '施工の立会い及び試験', '機器及び完成設備'];
 
