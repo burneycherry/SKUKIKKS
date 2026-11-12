@@ -33,6 +33,7 @@
         <button type="button" class="seg-btn" data-type="sogo">総合</button>
         <button type="button" class="seg-btn" data-type="koshu">工種別</button>
         <button type="button" class="seg-btn" data-type="kan">施工計画書のみ</button>
+        <button type="button" class="seg-btn" data-type="check">チェックシート</button>
       </div>
       <p class="hint" id="docTypeHint"></p>
       <label class="field" id="koshuField" hidden><span>工種</span>
@@ -106,6 +107,7 @@
       <label class="check"><input type="checkbox" id="o_soshiki"><span>組織表・電気保安体制・品質管理体制</span></label>
       <label class="check"><input type="checkbox" id="o_tenpu"><span>総合施工計画書の添付シート（工程表・工種別一覧・安全衛生・連絡網・仮設計画）</span></label>
       <label class="check"><input type="checkbox" id="o_kanri"><span>管理表（品質計画）</span></label>
+      <label class="check"><input type="checkbox" id="o_check"><span>品質管理チェックシート（工種別の別添1）</span></label>
       <label class="check"><input type="checkbox" id="o_list"><span>対象工事種目一覧</span></label>
       <label class="check"><input type="checkbox" id="o_docs"><span>作成・提出資料一覧</span></label>
       <label class="check"><input type="checkbox" id="o_photos"><span>写真撮影項目一覧</span></label>
@@ -132,6 +134,7 @@
 
 <script src="vendor/exceljs.min.js"></script>
 <script src="data/kanrihyo.js"></script>
+<script src="data/checklist.js"></script>
 <script src="js/export.js"></script>
 <script src="js/app.js"></script>
 </body>

@@ -713,6 +713,76 @@
     return ws;
   }
 
+  /* ---------- 品質管理チェックシート（工種別施工計画書の別添1） ---------- */
+
+  // シート名に使えない文字を除き、31文字以内にする
+  function sheetName(s) {
+    return String(s).replace(/[\[\]:*?\/\\：]/g, ' ').substring(0, 31);
+  }
+
+  function addCheckSheet(wb, info, koshuName, no, sheet) {
+    var ws = portraitSheet(wb, sheetName('チェック' + no + ' ' + (sheet.item || '様式')));
+    ws.columns = [{ width: 6 }, { width: 36 }, { width: 17 }, { width: 12 }, { width: 10 }, { width: 7 }, { width: 11 }];
+    var H = { size: 10, v: 'middle', h: 'center', fill: true };
+    var C = { size: 10, v: 'middle' };
+    var CC = { size: 10, v: 'middle', h: 'center' };
+
+    textLine(ws, 1, 7, '品質管理チェックシート', 16, true, 30);
+    textLine(ws, 2, 7, '工事名　' + (info.kojiName || '') + '　／　' + koshuName, 10, false, 20, 'left');
+    textLine(ws, 3, 7, sheet.title || '', 11, true, 22, 'left');
+
+    box(ws, 4, 1, 4, 1, '項目', H);
+    box(ws, 4, 2, 4, 2, sheet.item || '', C);
+    box(ws, 4, 3, 4, 3, '作業場所', H);
+    box(ws, 4, 4, 4, 4, '', C);
+    box(ws, 4, 5, 4, 5, '作業日', H);
+    box(ws, 4, 6, 4, 7, '年　月　日', CC);
+    ws.getRow(4).height = Math.max(24, lineCount(sheet.item || '', 36, 10) * 14 + 8);
+    ws.getRow(5).height = 8;
+
+    box(ws, 6, 1, 7, 1, '当該\n項目', H);
+    box(ws, 6, 2, 7, 2, '管理項目', H);
+    box(ws, 6, 3, 7, 3, '管理基準', H);
+    box(ws, 6, 4, 7, 4, '確認方法', H);
+    box(ws, 6, 5, 6, 5, '担当者名', H);
+    box(ws, 6, 6, 6, 7, '', C);
+    box(ws, 7, 5, 7, 5, '確認日', H);
+    box(ws, 7, 6, 7, 6, '合否', H);
+    box(ws, 7, 7, 7, 7, '是正確認日', H);
+    ws.getRow(6).height = 20;
+    ws.getRow(7).height = 20;
+
+    var rows = sheet.rows || [];
+    rows.forEach(function (row, i) {
+      var r = 8 + i;
+      box(ws, r, 1, r, 1, '□', { size: 12, v: 'middle', h: 'center' });
+      box(ws, r, 2, r, 2, row[0] || '', C);
+      box(ws, r, 3, r, 3, row[1] || '', CC);
+      box(ws, r, 4, r, 4, row[2] || '', CC);
+      box(ws, r, 5, r, 5, '', C);
+      box(ws, r, 6, r, 6, '', C);
+      box(ws, r, 7, r, 7, '', C);
+      var n = Math.max(lineCount(row[0] || '', 36, 10), lineCount(row[1] || '', 17, 10),
+        lineCount(row[2] || '', 12, 10));
+      ws.getRow(r).height = Math.max(28, n * 14 + 8);
+    });
+    return ws;
+  }
+
+  // 選んだ工種のチェックシートを出力する。未登録の工種は空欄の様式を1枚出力する
+  function addChecks(wb, info, koshu) {
+    var all = window.CHECK_DATA || {};
+    var name = koshu < KOSHU.length ? KOSHU[koshu].replace(/施工計画書$|計画書$/, '') : (info.docTitle || '');
+    var sheets = all[koshu];
+    if (!sheets || !sheets.length) {
+      var blank = [];
+      var i;
+      for (i = 0; i < 12; i++) { blank.push(['', '', '']); }
+      sheets = [{ title: '', item: '', rows: blank }];
+    }
+    sheets.forEach(function (sh, i) { addCheckSheet(wb, info, name, i + 1, sh); });
+  }
+
   /* ---------- 一覧表 (汎用) ---------- */
 
   function addTable(wb, name, title, info, heads, widths, rows, centerCols) {
@@ -972,6 +1042,7 @@
       if (opt.docs !== false) { addDocList(wb, info, chapters); }
       if (opt.photos !== false) { addPhotoList(wb, info, chapters); }
     }
+    if (opt.check === true) { addChecks(wb, info, Number(state.koshu) || 0); }
     if (!wb.worksheets.length) { return Promise.reject(new Error('出力するシートがありません。出力内容を選んでください')); }
 
     return wb.xlsx.writeBuffer().then(function (buf) {

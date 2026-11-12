@@ -102,9 +102,9 @@ button.card-head { cursor: pointer; }
 .subhead { margin: 14px 0 8px; padding-top: 12px; border-top: 1px solid #dde2ea; font-size: 13px; font-weight: 700; color: #3d4a5c; }
 
 .subhead.first { margin-top: 0; padding-top: 0; border-top: 0; }
-.seg { display: flex; gap: 6px; margin-bottom: 6px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .seg-btn {
-  flex: 1;
+  flex: 1 1 40%;
   min-width: 0;
   min-height: 44px;
   padding: 6px 4px;
