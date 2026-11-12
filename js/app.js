@@ -71,6 +71,7 @@
       state.infoOpen = saved.infoOpen !== false;
       state.docType = DOC_TYPES[saved.docType] ? saved.docType : '';
       state.koshu = Number(saved.koshu) || 0;
+      if (!(state.koshu >= 0 && state.koshu <= window.SekokanExport.KOSHU.length)) { state.koshu = 0; }
     } else {
       // 初回: ⑴一般共通事項はどの工事にも該当するため選択済みにする
       DATA.chapters[0].items.forEach(function (it) {
@@ -82,7 +83,10 @@
     // 書類の種類が未保存（初回、または旧版からの引き継ぎ）のときは「施工計画書（簡略）」にする
     if (!state.docType) {
       state.docType = 'kan';
-      Object.keys(DOC_TYPES.kan.opt).forEach(function (k) { state.opt[k] = DOC_TYPES.kan.opt[k]; });
+      Object.keys(DOC_TYPES.kan.opt).forEach(function (k) {
+        // 旧版で保存済みのチェックはそのまま使い、未設定の項目だけ初期値にする
+        if (state.opt[k] === undefined) { state.opt[k] = DOC_TYPES.kan.opt[k]; }
+      });
     }
     if (state.opt.check === undefined) { state.opt.check = false; }
     OPT_KEYS.forEach(function (k) {
@@ -321,8 +325,14 @@
       btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
     }
     var hint = DOC_TYPES[state.docType].hint;
-    var byKoshu = state.docType === 'koshu' || state.docType === 'check';
-    if (state.docType === 'check' && !(window.CHECK_DATA && window.CHECK_DATA[state.koshu])) {
+    var typeByKoshu = state.docType === 'koshu' || state.docType === 'check';
+    var withCheck = state.opt.check === true;
+    // チェックシートを出力するときは、書類の種類にかかわらず工種を選べるようにする
+    var byKoshu = typeByKoshu || withCheck;
+    if (withCheck && !typeByKoshu) {
+      hint += 'チェックシートは、下の「工種」で選んだ工種の内容を出力します。';
+    }
+    if (withCheck && !(window.CHECK_DATA && window.CHECK_DATA[state.koshu])) {
       hint += 'この工種のチェック項目は未登録のため、空欄の様式を出力します。';
     }
     $('docTypeHint').textContent = hint;
@@ -365,12 +375,22 @@
     sel.value = String(state.koshu);
     sel.addEventListener('change', function () {
       state.koshu = Number(sel.value) || 0;
-      applyDocType(state.docType === 'check' ? 'check' : 'koshu');
+      if (state.docType === 'koshu' || state.docType === 'check') {
+        applyDocType(state.docType);       // 書類名を工種に合わせる
+      } else {
+        showDocType();                     // 施工計画書のみ・総合では、書類名や出力内容は変えない
+        changed();
+      }
     });
     var btns = $('docType').querySelectorAll('button');
     var i;
     function bind(b) {
-      b.addEventListener('click', function () { applyDocType(b.getAttribute('data-type')); });
+      b.addEventListener('click', function () {
+        var type = b.getAttribute('data-type');
+        // 選択中の種類をもう一度押しても、入力済みの書類名や出力内容は初期値に戻さない
+        if (type === state.docType) { return; }
+        applyDocType(type);
+      });
     }
     for (i = 0; i < btns.length; i++) { bind(btns[i]); }
     showDocType();
@@ -393,6 +413,7 @@
       cb.checked = state.opt[k] !== false;
       cb.addEventListener('change', function () {
         state.opt[k] = cb.checked;
+        showDocType();
         refresh();
         save();
         hideResult();

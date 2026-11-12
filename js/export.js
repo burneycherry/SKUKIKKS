@@ -140,14 +140,23 @@
     });
   }
 
-  // 枠なしの1行（左端から last 列まで結合）
+  // 左端から last 列までの列幅の合計
+  function totalWidth(ws, last) {
+    var w = 0;
+    var i;
+    for (i = 1; i <= last; i++) { w += ws.getColumn(i).width || 8; }
+    return w;
+  }
+
+  // 枠なしの1行（左端から last 列まで結合）。折り返して収まらないときは行の高さを広げる
   function textLine(ws, row, last, text, size, bold, height, align) {
     ws.mergeCells(row, 1, row, last);
     var c = ws.getCell(row, 1);
     c.value = text;
     c.font = { name: FONT, size: size, bold: !!bold };
     c.alignment = { horizontal: align || 'center', vertical: 'middle', wrapText: true };
-    ws.getRow(row).height = height;
+    var lines = lineCount(text, totalWidth(ws, last), size);
+    ws.getRow(row).height = Math.max(height, Math.ceil(lines * size * 1.35 + 6));
   }
 
   // 枠付きのセル（複数セルにまたがる場合は結合する）
@@ -179,7 +188,12 @@
     ws.getRow(1).height = 50;
     textLine(ws, 2, LAST, '工事名　　' + (info.kojiName || ''), 18, false, 36);
     ws.getRow(3).height = 50;
-    textLine(ws, 4, LAST, info.docTitle || '施工計画書', 34, true, 64);
+    // 書類名が1行に収まらないときは文字を小さくする（工種別は書類名が長い）
+    var title = info.docTitle || '施工計画書';
+    var tsize = 34;
+    if (lineCount(title, totalWidth(ws, LAST), tsize) > 1) { tsize = 26; }
+    if (lineCount(title, totalWidth(ws, LAST), tsize) > 1) { tsize = 20; }
+    textLine(ws, 4, LAST, title, tsize, true, 64);
     ws.getRow(5).height = 70;
 
     textLine(ws, 6, LAST, '　工事監理　' + (info.kojiKanri || ''), 12, false, 22, 'left');
@@ -247,7 +261,7 @@
     7: ['通信・情報設備'], 8: ['中央監視制御設備'], 9: ['医療関係設備']
   };
 
-  function addGaiyo(wb, info, chapters) {
+  function addGaiyo(wb, info, chapters, withKanri) {
     var ws = portraitSheet(wb, '工事概要');
     ws.columns = [{ width: 4 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 28 }];
     var LAST = 5;
@@ -326,7 +340,7 @@
       r++;
     }
 
-    if (!chapters.length) { return ws; }
+    if (!chapters.length || !withKanri) { return ws; }
     ws.getRow(r).height = 14;
     r++;
     textLine(ws, r, LAST, '管理表（品質計画）の対象工事種目', 11, false, 22, 'left');
@@ -594,7 +608,7 @@
       var m = Number(a[2]);
       var ey = Number(b[1]);
       var em = Number(b[2]);
-      while ((y < ey || (y === ey && m <= em)) && list.length < 36) {
+      while ((y < ey || (y === ey && m <= em)) && list.length < 60) {
         list.push({ y: y, m: m });
         m++;
         if (m > 12) { m = 1; y++; }
@@ -628,9 +642,12 @@
       var end = start;
       while (end + 1 < n && months[end + 1].y === months[start].y) { end++; }
       var ry = months[start].y - 2018;
-      var label = months[start].y ? ('令和' + (ry === 1 ? '元' : ry) + '年') : '令和　年';
-      // 1か月分しか幅がないときは短い表記にする
-      if (end === start && months[start].y) { label = 'R' + ry; }
+      var label = '令和　年';
+      if (months[start].y) {
+        label = ry >= 1 ? ('令和' + (ry === 1 ? '元' : ry) + '年') : (months[start].y + '年');
+        // 1か月分しか幅がないときは短い表記にする
+        if (end === start) { label = ry >= 1 ? ('R' + ry) : String(months[start].y).substring(2); }
+      }
       box(ws, 3, 2 + start, 3, 2 + end, label, H);
       start = end + 1;
     }
@@ -772,6 +789,7 @@
   // 選んだ工種のチェックシートを出力する。未登録の工種は空欄の様式を1枚出力する
   function addChecks(wb, info, koshu) {
     var all = window.CHECK_DATA || {};
+    if (!(koshu >= 0 && koshu <= KOSHU.length)) { koshu = 0; }
     var name = koshu < KOSHU.length ? KOSHU[koshu].replace(/施工計画書$|計画書$/, '') : (info.docTitle || '');
     var sheets = all[koshu];
     if (!sheets || !sheets.length) {
@@ -1024,7 +1042,7 @@
     wb.created = new Date();
 
     if (opt.cover !== false) { addCover(wb, info); }
-    if (opt.gaiyo !== false) { addGaiyo(wb, info, chapters); }
+    if (opt.gaiyo !== false) { addGaiyo(wb, info, chapters, opt.kanri !== false); }
     if (opt.soshiki !== false) { addSoshiki(wb, info); addHoan(wb); addHinshitsu(wb, info); }
     if (opt.tenpu !== false) {
       addBlank(wb, info, '全体工程表', '（このシートに全体工程表を作成してください。）');
