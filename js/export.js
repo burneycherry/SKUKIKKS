@@ -137,22 +137,34 @@
         margins: { left: 0.7, right: 0.7, top: 0.8, bottom: 0.8, header: 0.3, footer: 0.3 }
       }
     });
-    ws.columns = [{ width: 4 }, { width: 20 }, { width: 58 }, { width: 4 }];
+    // B〜E の4列を同じ幅にして、押印欄（4人分）と工事情報の表の両方に使う
+    ws.columns = [{ width: 3 }, { width: 19.5 }, { width: 19.5 }, { width: 19.5 }, { width: 19.5 }, { width: 3 }];
+    var LAST = 6;
 
-    function line(row, text, size, bold, height) {
-      ws.mergeCells(row, 1, row, 4);
+    function line(row, text, size, bold, height, align) {
+      ws.mergeCells(row, 1, row, LAST);
       var c = ws.getCell(row, 1);
       c.value = text;
       c.font = { name: FONT, size: size, bold: bold };
-      c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      c.alignment = { horizontal: align || 'center', vertical: 'middle', wrapText: true };
       ws.getRow(row).height = height;
     }
 
-    ws.getRow(1).height = 40;
-    ws.getRow(2).height = 40;
+    // 枠付きのセル（複数セルにまたがる場合は結合する）
+    function box(r1, c1, r2, c2, text, opt) {
+      var rr, cc;
+      for (rr = r1; rr <= r2; rr++) {
+        for (cc = c1; cc <= c2; cc++) { style(ws.getCell(rr, cc), opt); }
+      }
+      if (r1 !== r2 || c1 !== c2) { ws.mergeCells(r1, c1, r2, c2); }
+      ws.getCell(r1, c1).value = text;
+    }
+
+    ws.getRow(1).height = 20;
+    ws.getRow(2).height = 20;
     line(3, info.docTitle || '施工計画書', 32, true, 60);
     line(4, '（電気設備工事）', 16, false, 32);
-    ws.getRow(5).height = 40;
+    ws.getRow(5).height = 24;
 
     var rows = [
       ['工事名', info.kojiName],
@@ -168,32 +180,72 @@
     ];
     var r = 6;
     rows.forEach(function (kv) {
-      var a = ws.getCell(r, 2);
-      var b = ws.getCell(r, 3);
-      a.value = kv[0];
-      b.value = kv[1] || '';
-      style(a, { size: 12, v: 'middle', h: 'center', fill: true });
-      style(b, { size: 12, v: 'middle' });
-      ws.getRow(r).height = Math.max(30, lineCount(kv[1] || '', 58, 12) * 17 + 8);
+      box(r, 2, r, 2, kv[0], { size: 12, v: 'middle', h: 'center', fill: true });
+      box(r, 3, r, 5, kv[1] || '', { size: 12, v: 'middle' });
+      ws.getRow(r).height = Math.max(26, lineCount(kv[1] || '', 58, 12) * 17 + 8);
       r++;
     });
 
-    ws.getRow(r).height = 30;
+    /* 押印欄（書籍「電気設備工事の施工管理」第Ⅲ編 2.2 総合施工計画書作成例の表紙にならう） */
+    var HEADOPT = { size: 11, v: 'middle', h: 'center', fill: true };
+    var DATEOPT = { size: 10, v: 'middle', h: 'center' };
+    var DATE = '年　　月　　日';
+    var STAMP = 58;        // 押印スペースの高さ(pt)
+    var c;
+
+    ws.getRow(r).height = 14;
     r++;
-    var h = ws.getCell(r, 2);
-    h.value = '対象工事種目';
-    ws.mergeCells(r, 2, r, 3);
-    style(h, { size: 11, v: 'middle', h: 'center', fill: true });
-    style(ws.getCell(r, 3), { size: 11, fill: true });
-    ws.getRow(r).height = 24;
+    line(r, '　発注者・工事監理者', 11, false, 20, 'left');
+    r++;
+    box(r, 2, r, 3, '受理・承諾', HEADOPT);
+    box(r, 4, r, 5, '確認', HEADOPT);
+    ws.getRow(r).height = 20;
+    r++;
+    ['主任監督員', '監督員', '管理技術者※', '担当者'].forEach(function (t, i) {
+      box(r, 2 + i, r, 2 + i, t, HEADOPT);
+    });
+    ws.getRow(r).height = 20;
+    r++;
+    for (c = 2; c <= 5; c++) { box(r, c, r, c, DATE, DATEOPT); }
+    ws.getRow(r).height = 20;
+    r++;
+    // 受理・承諾側は押印欄の下に注記の行が入る。確認側は注記の行まで押印欄にする
+    box(r, 2, r, 2, '', {});
+    box(r, 3, r, 3, '', {});
+    box(r, 4, r + 1, 4, '', {});
+    box(r, 5, r + 1, 5, '', {});
+    ws.getRow(r).height = STAMP - 18;
+    r++;
+    box(r, 2, r, 3, '承諾は品質計画に係る部分', { size: 9, v: 'middle', h: 'center' });
+    ws.getRow(r).height = 18;
+    r++;
+    line(r, '　※「管理技術者」は、工事監理業務の受託者の代表となる工事監理者', 9, false, 16, 'left');
+    r++;
+
+    ws.getRow(r).height = 10;
+    r++;
+    line(r, '　受注者', 11, false, 20, 'left');
+    r++;
+    ['現場代理人', '監理(主任)技術者', '工事担当者', '工事担当者'].forEach(function (t, i) {
+      box(r, 2 + i, r, 2 + i, t, HEADOPT);
+    });
+    ws.getRow(r).height = 20;
+    r++;
+    for (c = 2; c <= 5; c++) { box(r, c, r, c, DATE, DATEOPT); }
+    ws.getRow(r).height = 20;
+    r++;
+    for (c = 2; c <= 5; c++) { box(r, c, r, c, '', {}); }
+    ws.getRow(r).height = STAMP;
+    r++;
+
+    ws.getRow(r).height = 16;
+    r++;
+    box(r, 2, r, 5, '対象工事種目', { size: 11, v: 'middle', h: 'center', fill: true });
+    ws.getRow(r).height = 22;
     r++;
     var names = chapters.map(function (ch) { return ch.title.replace(/　/g, ' '); });
-    var body = ws.getCell(r, 2);
-    ws.mergeCells(r, 2, r, 3);
-    body.value = names.join('\n');
-    style(body, { size: 11, v: 'middle' });
-    style(ws.getCell(r, 3), { size: 11 });
-    ws.getRow(r).height = Math.max(30, names.length * 16 + 10);
+    box(r, 2, r, 5, names.join('\n'), { size: 11, v: 'middle' });
+    ws.getRow(r).height = Math.max(26, names.length * 15 + 8);
     r += 2;
 
     line(r, '本書の管理表は、国土交通省「電気設備工事 施工管理 管理表（令和8年版）」から対象の工事種目を抜粋したものです。',
