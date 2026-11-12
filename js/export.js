@@ -441,6 +441,42 @@
     return ws;
   }
 
+  /* 品質管理体制（作成例「7.1 品質管理体制」の図にならう） */
+  function addHinshitsu(wb, info) {
+    var ws = portraitSheet(wb, '品質管理体制');
+    var cols = [];
+    var i;
+    for (i = 0; i < 14; i++) { cols.push({ width: 6.2 }); }
+    ws.columns = cols;
+    var LAST = 14;
+    var B = { size: 11, v: 'middle', h: 'center' };
+    var r;
+
+    textLine(ws, 1, LAST, '品質管理体制', 16, true, 30);
+    textLine(ws, 2, LAST, '当該工事の品質管理体制を次に示す。', 11, false, 22, 'left');
+
+    box(ws, 3, 8, 4, 13, '現場代理人\n' + orMaru(info.dairinin), B);
+    hline(ws, 4, 4, 7);                 // 現場代理人の左から監理技術者の上へ
+    vline(ws, 4, 4, 3);
+    box(ws, 5, 1, 6, 6, '監理(主任)技術者\n' + orMaru(info.gijutsu), B);
+    vline(ws, 7, 7, 3);
+    hline(ws, 8, 4, 10);
+    vline(ws, 8, 8, 3); vline(ws, 8, 8, 10);
+    box(ws, 9, 1, 10, 6, '○○担当者\n○○ ○○', B);
+    box(ws, 9, 8, 10, 13, '○○担当者\n○○ ○○', B);
+    vline(ws, 11, 11, 3); vline(ws, 11, 11, 10);
+    box(ws, 12, 1, 14, 6, '主任技術者\n○○○電気工事\n○○ ○○', B);
+    box(ws, 12, 8, 14, 13, '主任技術者\n○○○電気工事\n○○ ○○', B);
+    vline(ws, 15, 15, 3); vline(ws, 15, 15, 10);
+    box(ws, 16, 1, 17, 6, '職長　○○ ○○', B);
+    box(ws, 16, 8, 17, 13, '職長　○○ ○○', B);
+
+    for (r = 3; r <= 17; r++) { ws.getRow(r).height = 20; }
+    ws.getRow(18).height = 10;
+    textLine(ws, 19, LAST, '（○○ の箇所は、会社名・氏名に書き換えてください。枠はセルの罫線です。）', 9, false, 18, 'left');
+    return ws;
+  }
+
   /* ---------- 一覧表 (汎用) ---------- */
 
   function addTable(wb, name, title, info, heads, widths, rows, centerCols) {
@@ -680,7 +716,7 @@
 
     if (opt.cover !== false) { addCover(wb, info); }
     if (opt.gaiyo !== false) { addGaiyo(wb, info, chapters); }
-    if (opt.soshiki !== false) { addSoshiki(wb, info); addHoan(wb); }
+    if (opt.soshiki !== false) { addSoshiki(wb, info); addHoan(wb); addHinshitsu(wb, info); }
     if (opt.list !== false) { addItemList(wb, info, chapters); }
     chapters.forEach(function (ch) { addChapter(wb, info, ch, opt.page !== false); });
     if (opt.docs !== false) { addDocList(wb, info, chapters); }
