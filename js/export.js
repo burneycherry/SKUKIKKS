@@ -801,6 +801,212 @@
     sheets.forEach(function (sh, i) { addCheckSheet(wb, info, name, i + 1, sh); });
   }
 
+  /* ---------- 機器搬入計画書・搬入時の体制表（作成例 (8) の 5.1 ①②にならう） ---------- */
+
+  // 搬入・据付け工事の工種名から機器名を取り出す（それ以外の工種は空文字）
+  function hannyuKiki(koshu) {
+    var name = koshu >= 0 && koshu < KOSHU.length ? KOSHU[koshu] : '';
+    var m = /^(.+)搬入・据付け工事施工計画書$/.exec(name);
+    return m ? m[1] : '';
+  }
+
+  // 共通で決まる部分だけ記入し、機器ごとに変わる部分は ○○ のまま出力する（Excel で仕上げる）
+  function addHannyu(wb, info, koshu) {
+    var ws = portraitSheet(wb, '機器搬入計画書');
+    var WV = 25;                        // 記事の1列分の幅（3列で1行）
+    ws.columns = [{ width: 4 }, { width: 19 }, { width: WV }, { width: WV }, { width: WV }];
+    var H = { size: 10, v: 'middle', h: 'center', fill: true };
+    var K = { size: 9, v: 'middle', h: 'center' };
+    var V = { size: 10, v: 'middle' };
+    var kiki = hannyuKiki(koshu);
+    var cub = koshu === 7;              // キュービクル式配電盤、直流電源装置（作成例の記載を使う）
+    var juchu = info.juchu || '○○○○電気株式会社';
+
+    var unpan = cub ? [
+      '(1) 現地構内常備のクレーン（○○ton）を使用して〔○○○○棟〕の○○階屋内：電気室へ「キュービクル・直流電源装置」を搬入・設置する。（キュービクル）は各面に分割し搬入する。',
+      '(2) 変圧器のうち（動力変圧器：3φ○○kVA）×○台は取外して搬入作業を行う。',
+      '(3) 機器は電気室前の〔○○○〕部分へ揚重する、機器の荷受位置から電気室に至る横引き移動通路は養生板（○○×○○×○○）を敷き並べて床面を保護養生する。',
+      '(4) 「チャンネルベース」は事前搬入し（アンカーボルト）を打込据付・固定済みとする。',
+      '(5) 「筐体」の据付・組立後に（組立式門形支柱）を用いて変圧器の組込作業を行う。'
+    ] : ['(1) ', '(2) ', '(3) '];
+    var hinmoku = cub ? [
+      ['品名', 'キュービクル式配電盤、直流電源装置ほか'],
+      ['個数', '〔キュービクル〕（○面型＋○面型・各面分割・変圧器取外し）×1基、（直流電源装置）一式'],
+      ['①〔キュービクル〕', '○面型（○○×○○×○○）総重量：○○kg・（最大重量品：変圧器3φ○○kVA・○○kg）'],
+      ['②〔直流電源装置〕', '○面型（○○×○○×○○）総重量：○○kg']
+    ] : [
+      ['品名', kiki ? kiki + 'ほか' : '○○○○'],
+      ['個数', '○○○○ ×○基'],
+      ['①〔○○○○〕', '（○○×○○×○○）総重量：○○kg']
+    ];
+
+    // [区分, 項目, 記事...]。記事は1行ずつ。3要素の配列は3列に分けて出力する
+    var G = [
+      ['㈠', [['目的', ['「電気設備機器（' + (kiki || '○○○○') + '）」の搬入据付工事']]]],
+      ['㈡', [['搬入場所', ['○○建物：○○○室']]]],
+      ['㈢実施日時', [
+        ['開始', ['令和○○年○○月○○日（○）午前　○○時～']],
+        ['終了', ['令和○○年○○月○○日（○）午後　○○時']],
+        ['特記', ['作業時間帯：○○：○○～○○：○○']]
+      ]],
+      ['㈣品目', hinmoku.map(function (h) { return [h[0], [h[1]]]; })],
+      ['㈤搬入業者', [
+        ['住所・電話', ['○○○○○○○○　〔電話〕○○○○○○']],
+        ['業者名', ['○○○○株式会社']],
+        ['連絡者', ['○○○○　〔電話〕○○○○○○']]
+      ]],
+      ['㈥搬入方法', [
+        ['運搬方法\n及び経路', unpan],
+        ['車両', [
+          '(1) 機器輸送車両　　　　　　　　　○○tonトラック×○台' + (cub ? '（キュービクル・変圧器）' : ''),
+          '(2) 機材車両（大型機材輸送）　　　○tonユニック（○tonクレーン架装）×○台',
+          '(3) 機材車両（小型・手工具輸送）　○tonトラック×○台'
+        ]],
+        ['体制', ['(1) 組織表　　　　別紙（搬入時の体制表）', '(2) 作業員名簿　　別紙']]
+      ]],
+      ['㈦安全対策', [
+        ['施設', [
+          '(1) 作業区域は「カラーコーン・バリケード」を設置して立入禁止とする。',
+          '(2) 機械、運搬具等は必ず仮つりを行った後、本つりを行う。',
+          '(3) ワイヤロープほかの使用機材の整備・点検を徹底する。',
+          '(4) 作業照度不足の通路、' + (cub ? '電気室' : '搬入場所') + 'には投光器を設置し照度を確保し作業の安全に努める。'
+        ]],
+        ['人員', ['監視員を配置する。']],
+        ['教育', [
+          '(1) 各種役割の責任者及び新規入場者教育を受けた作業員を配置する。',
+          '(2) 場内車両運行速度制限の厳守と第三者災害の防止を徹底する。'
+        ]],
+        ['緊急連絡先', [
+          '(1) 施工者　　　' + juchu + '　　TEL ○○○○○○',
+          '(2) 搬入業者　　○○○○株式会社　　TEL ○○○○○○'
+        ]]
+      ]],
+      ['㈧資格他', [
+        ['免許資格の\n種類\n（該当のもの\nに○印）', [
+          ['クレーン・デリック運転士免許', '移動式クレーン運転士技能講習', '建設用リフト特別教育修了者'],
+          ['巻上機特別教育修了者', '玉掛け技能講習修了者', '足場の組立等作業主任者'],
+          ['高所作業特別教育修了者', '高所作業技能講習修了者', 'フォークリフトの運転業務']
+        ]]
+      ]],
+      ['㈨その他', [
+        ['申請書類', [
+          '(1) 道路使用許可証　　許可番号（　　　　　　　　　　）',
+          '(2) 通行許可証　　　　　〃　　（　　　　　　　　　　）',
+          '(3) 特殊車両通行許可申請　　要　・　不要'
+        ]],
+        ['近隣対策', ['(1) 時間　　：早朝、昼間、夜間', '(2) 近隣対策：済み、未、無']]
+      ]]
+    ];
+
+    textLine(ws, 1, 5, '機器搬入計画書', 16, true, 30);
+    textLine(ws, 2, 5, '工事名　' + (info.kojiName || ''), 10, false, 20, 'left');
+    box(ws, 3, 1, 3, 2, '項目', H);
+    box(ws, 3, 3, 3, 5, '記事', H);
+    ws.getRow(3).height = 20;
+
+    var r = 4;
+    G.forEach(function (g) {
+      var g1 = r;
+      g[1].forEach(function (it) {
+        var k1 = r;
+        it[1].forEach(function (line) {
+          var n = 1;
+          if (typeof line === 'string') {
+            box(ws, r, 3, r, 5, line, V);
+            n = lineCount(line, WV * 3, 10);
+          } else {
+            line.forEach(function (t, i) {
+              box(ws, r, 3 + i, r, 3 + i, t, K);
+              n = Math.max(n, lineCount(t, WV, 9));
+            });
+          }
+          ws.getRow(r).height = Math.max(19, n * 13.5 + 6);
+          r++;
+        });
+        box(ws, k1, 2, r - 1, 2, it[0], K);
+      });
+      box(ws, g1, 1, r - 1, 1, g[0], { size: 9, v: 'middle', h: 'center', vertical: true, wrap: false });
+    });
+    ws.getRow(r).height = 8;
+    textLine(ws, r + 1, 5, '（○○ や空欄の箇所は、搬入する機器・搬入業者に合わせて書き換えてください。' +
+      '該当する免許資格・選択肢は、Excel の図形（だ円）で囲んでください。）', 9, false, 30, 'left');
+    return ws;
+  }
+
+  function addHannyuTaisei(wb, info) {
+    var ws = portraitSheet(wb, '搬入時の体制表');
+    var cols = [];
+    var i;
+    for (i = 0; i < 14; i++) { cols.push({ width: 6.2 }); }
+    ws.columns = cols;
+    var LAST = 14;
+    var B = { size: 11, v: 'middle', h: 'center' };
+    var S = { size: 10, v: 'middle', h: 'center' };
+    var koji = info.kojiName || '○○○○○○工事';
+    var juchu = info.juchu || '○○○○電気工事㈱';
+    var r;
+
+    function tel(row) {
+      var names = ['（会社）', '（現場）', '（携帯）'];
+      names.forEach(function (n, k) {
+        ws.mergeCells(row + k, 11, row + k, 14);
+        var c = ws.getCell(row + k, 11);
+        c.value = ' TEL ○○○○○○' + n;
+        c.font = { name: FONT, size: 10 };
+        c.alignment = { vertical: 'middle' };
+      });
+    }
+    function person(row, role, name) {
+      box(ws, row, 3, row, 10, koji, B);
+      box(ws, row + 1, 3, row + 1, 10, juchu, B);
+      box(ws, row + 2, 3, row + 2, 6, role, B);
+      box(ws, row + 2, 7, row + 2, 10, name, B);
+    }
+    function team(row, heads, names) {
+      heads.forEach(function (h, k) {
+        var c1 = 1 + k * 2;
+        box(ws, row, c1, row, c1 + 1, h, { size: 9, v: 'middle', h: 'center', fill: true });
+        names.forEach(function (line, q) {
+          box(ws, row + 1 + q, c1, row + 1 + q, c1 + 1, line[k] ? '○○○○' : '', S);
+        });
+        box(ws, row + 1 + names.length, c1, row + 1 + names.length, c1 + 1, '○○○○㈱', S);
+      });
+    }
+
+    textLine(ws, 1, LAST, '搬入時の体制表', 16, true, 30);
+    ws.getRow(2).height = 10;
+    person(3, '現場代理人', orMaru(info.dairinin, '○○○○'));
+    tel(3);
+    vline(ws, 6, 6, 6);
+    person(7, '監理(主任)技術者', orMaru(info.gijutsu, '○○○○'));
+    vline(ws, 10, 10, 6);
+    person(11, '現場担当', '○○○○');
+    vline(ws, 14, 14, 6);
+    box(ws, 15, 3, 15, 6, '搬入業者', B);
+    box(ws, 15, 7, 15, 10, '○○○○㈱', B);
+    box(ws, 16, 3, 16, 6, '現場責任者', B);
+    box(ws, 16, 7, 16, 10, '○○○○', B);
+    box(ws, 17, 3, 17, 6, '安全衛生責任者', B);
+    box(ws, 17, 7, 17, 10, '○○○○', B);
+    tel(15);
+    vline(ws, 18, 19, 6);
+    hline(ws, 19, 7, 12);               // 2つ目の作業班へ回す線
+    vline(ws, 19, 27, 12);
+    hline(ws, 28, 9, 12);
+    team(20, ['作業指揮者', 'クレーン\nオペレーター', '玉掛者', '合図者', '据付作業員'],
+      [[1, 1, 1, 0, 1], [0, 1, 1, 0, 1], [0, 0, 0, 0, 1]]);
+    team(26, ['据付作業員', '組立作業員', '監視員', '誘導員'],
+      [[1, 1, 1, 1], [1, 1, 1, 0], [0, 0, 0, 0]]);
+    for (r = 3; r <= 30; r++) { ws.getRow(r).height = 22; }
+    ws.getRow(6).height = 12; ws.getRow(10).height = 12; ws.getRow(14).height = 12;
+    ws.getRow(18).height = 12; ws.getRow(19).height = 12; ws.getRow(25).height = 12;
+    ws.getRow(20).height = 28; ws.getRow(26).height = 28;
+    ws.getRow(31).height = 10;
+    textLine(ws, 32, LAST, '（○○○○ の箇所は、氏名・会社名・電話番号に書き換えてください。枠はセルの罫線です。）',
+      9, false, 18, 'left');
+    return ws;
+  }
+
   /* ---------- 一覧表 (汎用) ---------- */
 
   function addTable(wb, name, title, info, heads, widths, rows, centerCols) {
@@ -1060,6 +1266,7 @@
       if (opt.docs !== false) { addDocList(wb, info, chapters); }
       if (opt.photos !== false) { addPhotoList(wb, info, chapters); }
     }
+    if (opt.hannyu === true) { addHannyu(wb, info, Number(state.koshu) || 0); addHannyuTaisei(wb, info); }
     if (opt.check === true) { addChecks(wb, info, Number(state.koshu) || 0); }
     if (!wb.worksheets.length) { return Promise.reject(new Error('出力するシートがありません。出力内容を選んでください')); }
 
