@@ -1006,11 +1006,11 @@
   }
 
   /* 搬入計画の図・表（作成例 (8) の 5.1 ③〜⑥）。表題だけ出力し、利用者が Excel で仕上げる */
-  function addHannyuZu(wb, info) {
+  function addHannyuZu(wb, info, koshu) {
     var ws = addBlank(wb, info, '搬入経路・揚重計画ほか',
       '（このシートに ③〜⑥ の図・表を作成してください。見出しの位置は自由に動かせます。）');
     var items = [
-      ['③ 搬入経路', '搬入は、次の経路で行う。なお、搬入経路の壁面は、ベニヤ板で養生する。'],
+      ['③ 搬入経路', (koshu === 8 ? '搬入ルートは' : '搬入は') + '、次の経路で行う。なお、搬入経路の壁面は、ベニヤ板で養生する。'],
       ['④ 揚重機の配置計画', 'クレーンの搬入路とクレーン配置計画を作成する。作業半径を確認する。'],
       ['⑤ クレーンの選定', '実際に使用するクレーンの能力を確認する。（定格総荷重表、作業半径－揚程図を添付）'],
       ['⑥ 作業スケジュール表', '作業当日の作業スケジュール表を作成する。']
@@ -1045,7 +1045,7 @@
     var L = { size: 10, v: 'middle' };
     var INPUT = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF2CC' } };
     // 条件の初期値（作成例の値）
-    var W = 1.8, DIA = 16, N = 4, TH = 60, SF = 6, COL = 2;
+    var W = koshu === 8 ? 3.5 : 1.8, DIA = 16, N = 4, TH = 60, SF = 6, COL = 2;
     var coef = 1.16, cut = 12.80;
     function safe(c) { return Math.round(c * N / (SF * coef) * 1000) / 1000; }
     function fx(cell, formula, result) { cell.value = { formula: formula, result: result }; }
@@ -1056,7 +1056,7 @@
 
     var conds = [
       ['つり荷（最大重量品）', koshu === 7 ? 'キュービクル式配電盤（最大重量品 ○○○○）'
-        : (koshu === 8 ? 'キュービクル式自家発電装置' : '○○○○'), ''],
+        : (koshu === 8 ? 'キュービクル式発電機' : '○○○○'), ''],
       ['最大荷重 (t)', W, ''],
       ['ワイヤロープの径 (mm)', DIA, '表2の径で入力'],
       ['つり本数 (本)', N, ''],
@@ -1533,7 +1533,7 @@
     if (opt.hannyu === true) { var kq = Number(state.koshu) || 0;
       addHannyu(wb, info, kq);
       addHannyuTaisei(wb, info);
-      addHannyuZu(wb, info);
+      addHannyuZu(wb, info, kq);
       addWire(wb, info, kq);
       addSuetsuke(wb, info, kq);
       addAnchor(wb, info);
