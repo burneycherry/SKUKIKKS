@@ -1,5 +1,5 @@
 /* オフライン用キャッシュ。ファイルを更新したら VERSION を上げること */
-var VERSION = 'sekokan-v15';
+var VERSION = 'sekokan-v16';
 var FILES = [
   './',
   'index.html',

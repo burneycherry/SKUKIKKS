@@ -822,22 +822,12 @@
     var cub = koshu === 7;              // キュービクル式配電盤、直流電源装置（作成例の記載を使う）
     var juchu = info.juchu || '○○○○電気株式会社';
 
-    var unpan = cub ? [
-      '(1) 現地構内常備のクレーン（○○ton）を使用して〔○○○○棟〕の○○階屋内：電気室へ「キュービクル・直流電源装置」を搬入・設置する。（キュービクル）は各面に分割し搬入する。',
-      '(2) 変圧器のうち（動力変圧器：3φ○○kVA）×○台は取外して搬入作業を行う。',
-      '(3) 機器は電気室前の〔○○○〕部分へ揚重する、機器の荷受位置から電気室に至る横引き移動通路は養生板（○○×○○×○○）を敷き並べて床面を保護養生する。',
-      '(4) 「チャンネルベース」は事前搬入し（アンカーボルト）を打込据付・固定済みとする。',
-      '(5) 「筐体」の据付・組立後に（組立式門形支柱）を用いて変圧器の組込作業を行う。'
-    ] : ['(1) ', '(2) ', '(3) '];
-    var hinmoku = cub ? [
-      ['品名', 'キュービクル式配電盤、直流電源装置ほか'],
-      ['個数', '〔キュービクル〕（○面型＋○面型・各面分割・変圧器取外し）×1基、（直流電源装置）一式'],
-      ['①〔キュービクル〕', '○面型（○○×○○×○○）総重量：○○kg・（最大重量品：変圧器3φ○○kVA・○○kg）'],
-      ['②〔直流電源装置〕', '○面型（○○×○○×○○）総重量：○○kg']
-    ] : [
-      ['品名', kiki ? kiki + 'ほか' : '○○○○'],
-      ['個数', '○○○○ ×○基'],
-      ['①〔○○○○〕', '（○○×○○×○○）総重量：○○kg']
+    // 機器・現場ごとに変わる欄（㈣〜㈥の記事）は白紙にして、項目だけ残す（利用者の指示）
+    var hinmoku = [
+      ['品名', kiki ? kiki + 'ほか' : ''],
+      ['個数', ''],
+      [cub ? '①〔キュービクル〕' : '①', ''],
+      [cub ? '②〔直流電源装置〕' : '②', '']
     ];
 
     // [区分, 項目, 記事...]。記事は1行ずつ。3要素の配列は3列に分けて出力する
@@ -851,16 +841,16 @@
       ]],
       ['㈣品目', hinmoku.map(function (h) { return [h[0], [h[1]]]; })],
       ['㈤搬入業者', [
-        ['住所・電話', ['○○○○○○○○　〔電話〕○○○○○○']],
-        ['業者名', ['○○○○株式会社']],
-        ['連絡者', ['○○○○　〔電話〕○○○○○○']]
+        ['住所・電話', ['']],
+        ['業者名', ['']],
+        ['連絡者', ['']]
       ]],
       ['㈥搬入方法', [
-        ['運搬方法\n及び経路', unpan],
+        ['運搬方法\n及び経路', ['(1) ', '(2) ', '(3) ', '(4) ', '(5) ']],
         ['車両', [
-          '(1) 機器輸送車両　　　　　　　　　○○tonトラック×○台' + (cub ? '（キュービクル・変圧器）' : ''),
-          '(2) 機材車両（大型機材輸送）　　　○tonユニック（○tonクレーン架装）×○台',
-          '(3) 機材車両（小型・手工具輸送）　○tonトラック×○台'
+          '(1) 機器輸送車両',
+          '(2) 機材車両（大型機材輸送）',
+          '(3) 機材車両（小型・手工具輸送）'
         ]],
         ['体制', ['(1) 組織表　　　　別紙（搬入時の体制表）', '(2) 作業員名簿　　別紙']]
       ]],
@@ -884,7 +874,7 @@
       ['㈧資格他', [
         ['免許資格の\n種類\n（該当のもの\nに○印）', [
           ['クレーン・デリック運転士免許', '移動式クレーン運転士技能講習', '建設用リフト特別教育修了者'],
-          ['巻上機特別教育修了者', '玉掛け技能講習修了者', '足場の組立等作業主任者'],
+          ['巻上げ機特別教育修了者', '玉掛け技能講習修了者', '足場の組立等作業主任者'],
           ['高所作業特別教育修了者', '高所作業技能講習修了者', 'フォークリフトの運転業務']
         ]]
       ]],
@@ -928,8 +918,8 @@
       box(ws, g1, 1, r - 1, 1, g[0], { size: 9, v: 'middle', h: 'center', vertical: true, wrap: false });
     });
     ws.getRow(r).height = 8;
-    textLine(ws, r + 1, 5, '（○○ や空欄の箇所は、搬入する機器・搬入業者に合わせて書き換えてください。' +
-      '該当する免許資格・選択肢は、Excel の図形（だ円）で囲んでください。）', 9, false, 30, 'left');
+    textLine(ws, r + 1, 5, '（○○ や空欄の箇所は、搬入する機器・現場・搬入業者に合わせて記入してください。' +
+      '該当する免許資格・選択肢には ○ を付けてください。）', 9, false, 30, 'left');
     return ws;
   }
 
@@ -1004,6 +994,181 @@
     ws.getRow(31).height = 10;
     textLine(ws, 32, LAST, '（○○○○ の箇所は、氏名・会社名・電話番号に書き換えてください。枠はセルの罫線です。）',
       9, false, 18, 'left');
+    return ws;
+  }
+
+  /* 搬入計画の図・表（作成例 (8) の 5.1 ③〜⑥）。表題だけ出力し、利用者が Excel で仕上げる */
+  function addHannyuZu(wb, info) {
+    var ws = addBlank(wb, info, '搬入経路・揚重計画ほか',
+      '（このシートに ③〜⑥ の図・表を作成してください。見出しの位置は自由に動かせます。）');
+    var items = [
+      ['③ 搬入経路', '搬入は、次の経路で行う。なお、搬入経路の壁面は、ベニヤ板で養生する。'],
+      ['④ 揚重機の配置計画', 'クレーンの搬入路とクレーン配置計画を作成する。作業半径を確認する。'],
+      ['⑤ クレーンの選定', '実際に使用するクレーンの能力を確認する。（定格総荷重表、作業半径－揚程図を添付）'],
+      ['⑥ 作業スケジュール表', '作業当日の作業スケジュール表を作成する。']
+    ];
+    items.forEach(function (it, i) {
+      var r = 5 + i * 12;
+      textLine(ws, r, 20, it[0], 12, true, 22, 'left');
+      textLine(ws, r + 1, 20, '・' + it[1], 10, false, 20, 'left');
+    });
+    return ws;
+  }
+
+  /* ワイヤロープの選定（作成例 (8) の 5.1 ⑦）。条件の欄を書き換えると Excel 上で再計算される */
+  var WIRE_T1 = [[0, 1.00], [10, 1.005], [20, 1.02], [30, 1.04], [40, 1.07], [50, 1.10], [60, 1.16], [70, 1.22],
+    [80, 1.31], [90, 1.41], [100, 1.56], [110, 1.74], [120, 2.00], [130, 2.37], [140, 2.93], [150, 3.86]];
+  // [ロープの径, 4号めっき種, 4号A種(裸), 6号めっき種, 6号A種(裸), 6×24の標準重量]
+  var WIRE_T2 = [
+    [8, 2.97, 3.21, 3.19, 3.46, 0.212], [9, 3.75, 4.06, 4.04, 4.38, 0.269], [10, 4.64, 5.02, 4.99, 5.41, 0.332],
+    [11.2, 5.82, 6.29, 6.26, 6.79, 0.416], [12.5, 7.25, 7.84, 7.80, 8.45, 0.519], [14, 9.09, 9.83, 9.81, 10.60, 0.651],
+    [16, 11.90, 12.80, 12.80, 13.80, 0.850], [18, 15.00, 16.20, 16.20, 17.50, 1.080],
+    [20, 18.50, 20.10, 19.90, 21.60, 1.330], [22.4, 23.30, 25.20, 25.00, 27.10, 1.670],
+    [25, 29.00, 31.30, 31.20, 33.80, 2.080]
+  ];
+
+  function addWire(wb, info, koshu) {
+    var ws = portraitSheet(wb, 'ワイヤロープの選定');
+    ws.columns = [{ width: 13 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 },
+      { width: 12 }, { width: 8 }];
+    var LAST = 8;
+    var H = { size: 10, v: 'middle', h: 'center', fill: true };
+    var C = { size: 10, v: 'middle', h: 'center' };
+    var L = { size: 10, v: 'middle' };
+    var INPUT = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF2CC' } };
+    // 条件の初期値（作成例の値）
+    var W = 1.8, DIA = 16, N = 4, TH = 60, SF = 6, COL = 2;
+    var coef = 1.16, cut = 12.80;
+    function safe(c) { return Math.round(c * N / (SF * coef) * 1000) / 1000; }
+    function fx(cell, formula, result) { cell.value = { formula: formula, result: result }; }
+
+    textLine(ws, 1, LAST, 'ワイヤロープの選定', 16, true, 30);
+    textLine(ws, 2, LAST, '工事名　' + (info.kojiName || ''), 10, false, 20, 'left');
+    textLine(ws, 3, LAST, '1. 選定条件（色付きの欄を書き換えると、計算結果と表2の判定が再計算されます）', 11, true, 22, 'left');
+
+    var conds = [
+      ['つり荷（最大重量品）', koshu === 7 ? 'キュービクル式配電盤（最大重量品 ○○○○）' : '○○○○', ''],
+      ['最大荷重 (t)', W, ''],
+      ['ワイヤロープの径 (mm)', DIA, '表2の径で入力'],
+      ['つり本数 (本)', N, ''],
+      ['つり角度 θ (°)', TH, '表1の角度で入力（60°以内）'],
+      ['安全係数', SF, 'クレーン等安全規則第213条（6以上）'],
+      ['切断荷重の列（表2）', COL, '1:4号めっき 2:4号A種 3:6号めっき 4:6号A種']
+    ];
+    conds.forEach(function (c, i) {
+      var r = 4 + i;
+      box(ws, r, 1, r, 3, c[0], L);
+      if (i === 0) {
+        box(ws, r, 4, r, 8, c[1], L);
+      } else {
+        box(ws, r, 4, r, 4, c[1], C);
+        box(ws, r, 5, r, 8, c[2], { size: 9, v: 'middle' });
+      }
+      ws.getCell(r, 4).fill = INPUT;
+      ws.getRow(r).height = 20;
+    });
+
+    textLine(ws, 11, LAST, '2. 計算結果　安全荷重＝（切断荷重×つり本数）÷（安全係数×張力増加係数）', 11, true, 22, 'left');
+    box(ws, 12, 1, 12, 3, '張力増加係数（表1）', L);
+    box(ws, 12, 4, 12, 4, '', C);
+    fx(ws.getCell(12, 4), 'IF(D8<=70,VLOOKUP(D8,D20:E27,2,FALSE),VLOOKUP(D8,F20:G27,2,FALSE))', coef);
+    box(ws, 13, 1, 13, 3, '切断荷重（表2） (t)', L);
+    box(ws, 13, 4, 13, 4, '', C);
+    fx(ws.getCell(13, 4), 'INDEX(B34:E44,MATCH(D6,A34:A44,0),D10)', cut);
+    box(ws, 14, 1, 14, 3, '安全荷重 (t)', L);
+    box(ws, 14, 4, 14, 4, '', C);
+    fx(ws.getCell(14, 4), 'ROUND(D13*D7/(D9*D12),3)', safe(cut));
+    ws.getCell(14, 4).numFmt = '0.000';
+    box(ws, 15, 1, 15, 3, '判定', L);
+    box(ws, 15, 4, 15, 8, '', L);
+    fx(ws.getCell(15, 4), 'IF(D14>D5,"安全荷重 ＞ 最大荷重　問題なし","安全荷重が不足　径・本数を見直す")',
+      '安全荷重 ＞ 最大荷重　問題なし');
+    box(ws, 16, 1, 16, 3, '使用できる最小の径 (mm)', L);
+    box(ws, 16, 4, 16, 4, '', C);
+    var minDia = '該当なし';
+    WIRE_T2.forEach(function (t) {
+      if (minDia === '該当なし' && safe(t[COL]) > W && t[0] >= 12.5) { minDia = t[0]; }
+    });
+    fx(ws.getCell(16, 4), 'IFERROR(INDEX(A34:A44,MATCH("○",H34:H44,0)),"該当なし")', minDia);
+    box(ws, 16, 5, 16, 8, '表2の判定が ○ になる最小の径（安全荷重 ＞ 最大荷重、かつ 12.5mm 以上）', { size: 9, v: 'middle' });
+    var r;
+    for (r = 12; r <= 16; r++) { ws.getRow(r).height = 20; }
+    ws.getRow(17).height = 8;
+
+    // 図1 つり角度（左）と 表1（右）
+    ws.mergeCells(18, 4, 18, 7);
+    ws.getCell(18, 4).value = '表1　ワイヤロープ張力増加係数';
+    ws.getCell(18, 4).font = { name: FONT, size: 10, bold: true };
+    ws.getCell(18, 4).alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(18).height = 20;
+    ['つり角度\n（θ°）', '張力増加\n係数', 'つり角度\n（θ°）', '張力増加\n係数'].forEach(function (t, i) {
+      box(ws, 19, 4 + i, 19, 4 + i, t, H);
+    });
+    ws.getRow(19).height = 30;
+    for (r = 0; r < 8; r++) {
+      box(ws, 20 + r, 4, 20 + r, 4, WIRE_T1[r][0], C);
+      box(ws, 20 + r, 5, 20 + r, 5, WIRE_T1[r][1], C);
+      box(ws, 20 + r, 6, 20 + r, 6, WIRE_T1[r + 8][0], C);
+      box(ws, 20 + r, 7, 20 + r, 7, WIRE_T1[r + 8][1], C);
+      ws.getCell(20 + r, 5).numFmt = WIRE_T1[r][1] === 1.005 ? '0.000' : '0.00';
+      ws.getCell(20 + r, 7).numFmt = '0.00';
+      ws.getRow(20 + r).height = 17;
+    }
+    // 図: つり線（縦線）、三角形（斜めの罫線）、つり荷（枠）
+    vline(ws, 19, 19, 1);
+    ws.mergeCells(20, 1, 23, 1);
+    ws.mergeCells(20, 2, 23, 2);
+    ws.getCell(20, 1).border = { diagonal: { up: true, down: false, style: 'thin', color: { argb: 'FF000000' } } };
+    ws.getCell(20, 2).border = { diagonal: { up: false, down: true, style: 'thin', color: { argb: 'FF000000' } } };
+    ws.getCell(20, 3).value = '← つり角度 θ';
+    ws.getCell(20, 3).font = { name: FONT, size: 9 };
+    ws.getCell(22, 3).value = '← 玉掛ワイヤ';
+    ws.getCell(22, 3).font = { name: FONT, size: 9 };
+    box(ws, 24, 1, 26, 2, 'つり荷', { size: 10, v: 'middle', h: 'center' });
+    ws.getCell(27, 1).value = '図1　つり角度';
+    ws.getCell(27, 1).font = { name: FONT, size: 10, bold: true };
+    textLine(ws, 28, LAST, '（注）張力増加係数＝1／cos（θ／2）。θ＝0（2本の玉掛用ワイヤロープが平行）のときのワイヤロープ張力を1とする。',
+      9, false, 18, 'left');
+    ws.getRow(29).height = 8;
+
+    // 表2
+    textLine(ws, 30, LAST, '表2　ワイヤロープの切断荷重 (t)　と　選定条件での安全荷重', 10, true, 20, 'left');
+    box(ws, 31, 1, 33, 1, 'ロープの径\n(mm)', H);
+    box(ws, 31, 2, 31, 3, '4号　6×24', H);
+    box(ws, 31, 4, 31, 5, '6号　6×37', H);
+    box(ws, 32, 2, 32, 2, '普通Z', H);
+    box(ws, 32, 3, 32, 3, '普通Z又はS', H);
+    box(ws, 32, 4, 32, 4, '普通Z', H);
+    box(ws, 32, 5, 32, 5, '普通Z又はS', H);
+    box(ws, 33, 2, 33, 2, 'めっき種', H);
+    box(ws, 33, 3, 33, 3, 'A種（裸）', H);
+    box(ws, 33, 4, 33, 4, 'めっき種', H);
+    box(ws, 33, 5, 33, 5, 'A種（裸）', H);
+    box(ws, 31, 6, 33, 6, '6×24の\n標準重量\n(kg/m)', H);
+    box(ws, 31, 7, 33, 7, '安全荷重\n(t)', H);
+    box(ws, 31, 8, 33, 8, '判定', H);       // 安全荷重 ＞ 最大荷重 かつ 径 12.5mm 以上で ○
+    for (r = 31; r <= 33; r++) { ws.getRow(r).height = 17; }
+    WIRE_T2.forEach(function (t, i) {
+      var rr = 34 + i;
+      var k;
+      for (k = 0; k < 6; k++) {
+        box(ws, rr, 1 + k, rr, 1 + k, t[k], C);
+        if (k > 0) { ws.getCell(rr, 1 + k).numFmt = k === 5 ? '0.000' : '0.00'; }
+      }
+      box(ws, rr, 7, rr, 7, '', C);
+      fx(ws.getCell(rr, 7), 'ROUND(INDEX(B' + rr + ':E' + rr + ',$D$10)*$D$7/($D$9*$D$12),3)', safe(t[COL]));
+      ws.getCell(rr, 7).numFmt = '0.000';
+      box(ws, rr, 8, rr, 8, '', C);
+      fx(ws.getCell(rr, 8), 'IF(AND(G' + rr + '>$D$5,A' + rr + '>=12.5),"○","×")',
+        (safe(t[COL]) > W && t[0] >= 12.5) ? '○' : '×');
+      ws.getRow(rr).height = 17;
+    });
+    ws.getRow(45).height = 8;
+    [
+      '・切断荷重は JIS に定められた値とする。ワイヤロープのつり角度は 60°以内で使用する。',
+      '・玉掛用具（ワイヤロープ）の安全係数は、クレーン等安全規則第213条により 6 以上とする。',
+      '・ワイヤロープの径は、12.5mm（安全作業基準の一例）以上を使用すること。'
+    ].forEach(function (t, i) { textLine(ws, 46 + i, LAST, t, 10, false, 18, 'left'); });
     return ws;
   }
 
@@ -1266,7 +1431,12 @@
       if (opt.docs !== false) { addDocList(wb, info, chapters); }
       if (opt.photos !== false) { addPhotoList(wb, info, chapters); }
     }
-    if (opt.hannyu === true) { addHannyu(wb, info, Number(state.koshu) || 0); addHannyuTaisei(wb, info); }
+    if (opt.hannyu === true) { var kq = Number(state.koshu) || 0;
+      addHannyu(wb, info, kq);
+      addHannyuTaisei(wb, info);
+      addHannyuZu(wb, info);
+      addWire(wb, info, kq);
+    }
     if (opt.check === true) { addChecks(wb, info, Number(state.koshu) || 0); }
     if (!wb.worksheets.length) { return Promise.reject(new Error('出力するシートがありません。出力内容を選んでください')); }
 
