@@ -42,6 +42,33 @@
     }
   };
 
+  // 工種（SekokanExport.KOSHU の添字）ごとに、管理表で初期選択する項目。{ 章id: [項目名, ...] }
+  // 工種別を選んだとき・工種を切り替えたときに、⑵〜⑼ の選択をこの内容に置き換える（⑴ 一般共通事項は変えない）。
+  // 登録の無い工種（検査・試運転の計画書、その他）は選択を変えない
+  var T2 = ['機材の試験', '共通事項', '施工の立会い及び試験'];
+  var T3 = ['機材の試験', '共通事項', '施工の立会い及び試験', '機器及び完成設備'];
+  var T4 = ['機材の試験', '据付け', '施工の立会い及び試験', '機器及び完成設備'];
+  var KOSHU_ITEMS = {
+    0: { 2: T2.concat(['電線保護物類', '金属管配線', '合成樹脂管配線（PF管、CD管、硬質ビニル管（通信・情報のみ））',
+      '合成樹脂管配線（硬質ビニル管）', '金属製可とう電線管配線']) },
+    1: { 2: T2.concat(['電線類', 'ケーブル配線（光ファイバケーブルを除く）', '光ファイバケーブル配線', '床上配線']) },
+    2: { 2: T2.concat(['電線類', '電線保護物類', '金属ダクト配線']) },
+    3: { 3: T3.concat(['分電盤', 'OA盤', '制御盤', '電灯設備', '動力設備']) },
+    4: { 3: T3.concat(['配線器具', '照明器具', '防災用照明器具', '照明制御装置', '電灯設備']) },
+    5: { 7: ['配線器具', '機材の試験', '施工の立会い及び試験', '機器及び完成設備', '端子盤・機器収納ラック等',
+      '構内情報通信網装置', '構内交換装置', '情報表示装置', '映像・音響装置', '拡声装置', '誘導支援装置',
+      'テレビ共同受信装置', '監視カメラ装置', '構内情報通信網設備', '構内交換設備', '情報表示設備', '映像・音響設備',
+      '拡声設備', '誘導支援設備', 'テレビ共同受信設備', '監視カメラ設備'] },
+    6: { 7: ['機材の試験', '施工の立会い及び試験', '機器及び完成設備', '自動火災報知装置', '自動閉鎖装置（自動閉鎖機構）',
+      '非常警報装置', '自動火災報知設備', '自動閉鎖設備（自動閉鎖機構）', '非常警報設備'] },
+    7: { 4: T4.concat(['キュービクル式配電盤']), 5: T4.concat(['直流電源装置']) },
+    8: { 6: ['機材の試験', '施工の立会い及び試験', '機器及び完成設備', 'ディーゼルエンジン発電装置',
+      'ディーゼルエンジン発電設備、ガスエンジン発電設備、ガスタービン発電設備及びマイクロガスタービン発電設備の据付け'] },
+    9: { 6: ['機材の試験', '施工の立会い及び試験', '機器及び完成設備', '太陽光発電装置', '太陽光発電設備の据付け'] },
+    10: { 2: T2.concat(['接地']) },
+    11: { 2: T2.concat(['電線類', '電線保護物類', '外線材料', '地中配線', '架空配線']) }
+  };
+
   var state = { info: {}, sel: {}, opt: {}, infoOpen: true, docType: '', koshu: 0 };
   var ui = { chap: {}, item: {}, group: {} };
   var lastFile = null;   // { blob, name, url }
@@ -126,6 +153,18 @@
 
   function chapterHasSelection(ch) {
     return ch.items.some(function (it) { return itemCount(it) > 0; });
+  }
+
+  // 工種に合わせて管理表の項目を選び直す。登録の無い工種は false を返し、選択を変えない
+  function selectByKoshu(koshu) {
+    var map = KOSHU_ITEMS[koshu];
+    if (!map) { return false; }
+    DATA.chapters.forEach(function (ch) {
+      if (ch.id === 1) { return; }
+      var names = map[ch.id] || [];
+      ch.items.forEach(function (it) { setItem(it, names.indexOf(it.name) >= 0); });
+    });
+    return true;
   }
 
   function addCommon(ch) {
@@ -344,10 +383,15 @@
     if (withSatsuei && !(window.SATSUEI_DATA && window.SATSUEI_DATA[state.koshu])) {
       hint += 'この工種の撮影箇所は作成例に無いため、撮影対象表（電気設備工事編）の全行を出力します。';
     }
+    if (state.docType === 'koshu') {
+      hint += KOSHU_ITEMS[state.koshu]
+        ? '工種を選ぶと、管理表の項目（⑵〜⑼）をその工種に合わせて選び直します。あとから個別に変更できます。'
+        : 'この工種は管理表の項目を自動では選びません。必要な項目をチェックしてください。';
+    }
     if (withCheck && !typeByKoshu) {
       hint += 'チェックシートは、下の「工種」で選んだ工種の内容を出力します。';
     }
-    if (withCheck && !(window.CHECK_DATA && window.CHECK_DATA[state.koshu])) {
+    if (withCheck && state.koshu !== 14 && !(window.CHECK_DATA && window.CHECK_DATA[state.koshu])) {
       hint += 'この工種のチェック項目は未登録のため、空欄の様式を出力します。';
     }
     if (withHannyu) {
@@ -372,6 +416,7 @@
     var list = koshuList();
     if (type === 'koshu') {
       title = state.koshu < list.length ? list[state.koshu] : '工種別施工計画書';
+      selectByKoshu(state.koshu);
     }
     if (type === 'check') {
       title = (state.koshu < list.length ? list[state.koshu].replace(/施工計画書$|計画書$/, '') + ' ' : '')

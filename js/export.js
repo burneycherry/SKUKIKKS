@@ -738,7 +738,7 @@
   }
 
   function addCheckSheet(wb, info, koshuName, no, sheet) {
-    var ws = portraitSheet(wb, sheetName('チェック' + no + ' ' + (sheet.item || '様式')));
+    var ws = portraitSheet(wb, sheetName('チェック' + no + ' ' + (sheet.name || sheet.item || '様式')));
     ws.columns = [{ width: 6 }, { width: 36 }, { width: 17 }, { width: 12 }, { width: 10 }, { width: 7 }, { width: 11 }];
     var H = { size: 10, v: 'middle', h: 'center', fill: true };
     var C = { size: 10, v: 'middle' };
@@ -792,6 +792,14 @@
     if (!(koshu >= 0 && koshu <= KOSHU.length)) { koshu = 0; }
     var name = koshu < KOSHU.length ? KOSHU[koshu].replace(/施工計画書$|計画書$/, '') : (info.docTitle || '');
     var sheets = all[koshu];
+    if (koshu === 14) {                 // 総合試運転計画書は、作成例 (15) の試験ごとのチェックリストを使う
+      sheets = [];
+      SHIUN.forEach(function (s) {
+        s.checks.forEach(function (ck) {
+          sheets.push({ title: ck.cap, name: ck.cap.replace(/^【|】.*$/g, ''), item: ck.item.replace(/\n/g, ''), rows: ck.rows });
+        });
+      });
+    }
     if (!sheets || !sheets.length) {
       var blank = [];
       var i;
