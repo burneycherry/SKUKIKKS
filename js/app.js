@@ -9,7 +9,7 @@
   var INFO_KEYS = ['docTitle', 'kojiName', 'basho', 'kokiFrom', 'kokiTo', 'hacchu',
     'juchu', 'dairinin', 'gijutsu', 'sakuseisha', 'sakuseiBi',
     'kojiKanri', 'kanri', 'sekkei', 'yoto', 'chiiki', 'kozo', 'kibo', 'shobo', 'bunrui'];
-  var OPT_KEYS = ['cover', 'gaiyo', 'soshiki', 'tenpu', 'kanri', 'check', 'hannyu', 'list', 'docs', 'photos', 'page'];
+  var OPT_KEYS = ['cover', 'gaiyo', 'soshiki', 'tenpu', 'kanri', 'check', 'hannyu', 'jishu', 'list', 'docs', 'photos', 'page'];
   // 章内で最初の項目を選んだときに一緒に選ぶ共通項目
   var COMMON = ['共通事項', '機材の試験', '施工の立会い及び試験', '機器及び完成設備'];
 
@@ -18,22 +18,22 @@
     sogo: {
       title: '総合施工計画書',
       hint: '表紙・工事概要・組織表・添付シートを出力します。管理表は含めません（工事種目の選択は不要）。',
-      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: true, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false }
+      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: true, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false, jishu: false }
     },
     koshu: {
       title: '',
       hint: '工種ごとに作成します。表紙と、選択した工事種目の管理表（品質計画）・資料一覧・写真一覧を出力します。',
-      opt: { cover: true, gaiyo: false, soshiki: false, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false }
+      opt: { cover: true, gaiyo: false, soshiki: false, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false, jishu: false }
     },
     check: {
       title: '',
       hint: '工種ごとの品質管理チェックシート（別添1）だけを、施工計画書とは別のファイルで出力します。',
-      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: true, list: false, docs: false, photos: false, hannyu: false }
+      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: true, list: false, docs: false, photos: false, hannyu: false, jishu: false }
     },
     kan: {
       title: '施工計画書',
       hint: '簡略的な工事向け。表紙・工事概要・組織表と管理表を1冊にまとめて出力します。',
-      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false }
+      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false, jishu: false }
     }
   };
 
@@ -90,6 +90,7 @@
     }
     if (state.opt.check === undefined) { state.opt.check = false; }
     if (state.opt.hannyu === undefined) { state.opt.hannyu = false; }
+    if (state.opt.jishu === undefined) { state.opt.jishu = false; }
     OPT_KEYS.forEach(function (k) {
       if (state.opt[k] === undefined) { state.opt[k] = true; }
     });
@@ -339,6 +340,9 @@
     }
     if (withHannyu) {
       hint += '機器搬入計画書は、共通の部分だけ記入した雛形を出力します（機器名は「工種」が搬入・据付け工事のときに入ります）。ワイヤロープの選定は、Excel で条件の欄を書き換えると再計算されます。';
+    }
+    if (state.opt.jishu === true) {
+      hint += '使用前自主検査の検査項目は、検査項目ごとに1シートずつ出力します。B種接地抵抗許容値は、Excel で色付きの欄を書き換えると再計算されます。';
     }
     $('docTypeHint').textContent = hint;
     $('koshuField').hidden = !byKoshu;
