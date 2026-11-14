@@ -3,6 +3,7 @@
 
   python3 tools/build_honbun.py          # data/honbun.js を書き出す
   python3 tools/build_honbun.py --text   # 変換結果を文字で表示（確認用）
+  python3 tools/build_honbun.py --dropped  # 注記として除いた行の一覧（本文の行が消えていないかの確認用）
 
 変換の決まり
 - 「## 数字. 見出し」の節だけを使う（前書き・表紙・別添・読み取りの注意などは使わない）
@@ -23,7 +24,7 @@ DOCS = os.path.join(ROOT, 'docs', 'honsho')
 KOSHU = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7, 9: 8, 10: 9, 11: 10, 12: 11, 13: 12, 14: 13, 15: 14, 17: 15}
 
 DROP = re.compile(r'未照合|読み取り|原本|記録しない|`|利用者|と見られる|PDF p\.|アプリ|K-\d|は記録|だけ記録|出典|写真では|'
-                  r'^（?続き|（p\.\d+ はここまで|^[^「]*の記録[はに]、|ではない）$|と違[いう]|下の「|に記録$|^本文は「|'
+                  r'^（?続き|（p\.\d+ はここまで|ではない）$|と違[いう]|下の「|に記録$|^本文は「|'
                   r'^第Ⅲ編 3\.2 の作成例|の項[はが]無い|の図は、標準図|^見出しは「|は無い）?$|^列は |^枠\d|^表\d（|のとおりに読んだ|^形は|^備考（枠|太枠')
 FIG = re.compile(r'^(図|図表|【参考図】|様式「|表「|「参考例)[（:「 ：]|^図$')
 REF = re.compile(r'\((\d+)\)[^）]*?と同[文じ]|\((\d+)\)[^、。]*の [\d.、]+ と同文')
@@ -47,6 +48,8 @@ def fix(t):
 
 def clean(t):
     t = fix(t.replace('**', ''))
+    # 行末に付けた記録用のかっこ書き（原本・アプリ・利用者の話）を取り除く
+    t = re.sub(r'（[^（）]*(?:（[^（）]*）[^（）]*)*?(原本|アプリ|利用者|読み取り).*$', '', t)
     t = re.sub(r'（p\.[\d〜、・ 上下]+[^）]*）', '', t)
     t = re.sub(r'（\(\d+\)[^（）]*(（[^）]*）[^（）]*)*）', '', t)       # （(1) 屋内配管工事と同文）など
     t = re.sub(r'（[^（）]*と同文[^（）]*）', '', t)
@@ -113,6 +116,7 @@ def find(lines, key):
 
 
 ALL = {}
+DROPPED = []
 
 # 別シートで出力している部分などの置き換え。{作成例の番号: {行の先頭: [差し替える子の行]}}
 BETSU = '（別シート「%s」を参照）'
@@ -151,6 +155,22 @@ SOGO_CHAP = {
     6: ['工程の管理は、全体工程表により行う', BETSU % '全体工程表'],
     10: ['総合仮設計画を次に示す', BETSU % '総合仮設計画'],
 }
+# 「(N) と同じ内容。ただし次の点が違う」と記録した項は、自動の参照では正しく作れないため、本文を明示的に持つ
+KANRI_1 = ['監理技術者は、事前に主任技術者へ施工計画書を説明する',
+           '作業前に、主任技術者が作業員へ作業手順を説明する。製品に添付されている施工要領がある場合は、併せて説明する',
+           '施工中は、作業員による施工確認を行う']
+KANRI_4B = ('一工程が完了したら、主任技術者が「電気設備工事の施工管理（令和8年版）」の施工管理表の「管理値・管理基準」の'
+            '品質を確保しているかを確認する')
+OVERRIDE[5] = {'6.2 管理方法': KANRI_1 + [KANRI_4B,
+                                     '上記確認後、監理技術者と主任技術者で施工状況を「品質管理チェックシート」（別添1）により確認する']}
+OVERRIDE[6] = {'6.2 管理方法': KANRI_1 + [KANRI_4B, '上記確認後、監理技術者と主任技術者で施工状況を「品質管理チェックシート」により確認する']}
+OVERRIDE[10]['6.2 管理方法'] = [
+    '監理技術者は、事前に主任技術者へ施工計画書を説明する',
+    '作業前に、主任技術者が作業員へ作業手順を説明する。製品に添付されている施工要領を併せて説明する',
+    '施工中は、作業員による施工の確認を行う',
+    '主任技術者は添付の「機器搬入計画書」を含む本施工計画書の 5.「施工要領」による施工手順どおりに作業が行われているか確認する',
+    '上記確認後、監理技術者と主任技術者で据付け状況を「品質管理チェックシート」（別添1）により確認する',
+    '※受注者が作成しているチェックシートを添付する']
 ADD = {9: {'自家発電装置の機材受入時は': ['機材は、設計図書に定める品質及び性能を有することの証明となる資料（試験成績書等）を、監督職員に提出する。'
                                 'ただし、あらかじめ監督職員の承諾を受けた場合は、資料の提出を後日とする']}}
 
@@ -244,8 +264,13 @@ def tidy(lines, num=0):
             out.append({'t': 'fig', 'lv': lv, 'text': '（図・様式は Excel で作成してください）'})
             i = subtree(lines, i)
             continue
+        m = re.match(r'^((?:[①-⑳]|\d+\.\d+) [^。（]+)。', t)
+        if m and DROP.search(t) and not DROP.search(m.group(1)):
+            t = m.group(1)                        # 見出しのあとに続けた記録用の文だけを除く
         if not t or DROP.search(t):
-            i = subtree(lines, i) if DROP.search(t or 'x') and not re.match(r'^[\d.]+ ', t) else i + 1
+            if t:
+                DROPPED.append((num, t))
+            i += 1
             continue
         out.append({'t': 'cap' if kind == 'cap' else 'p', 'lv': lv, 'text': t})
         for k in add:
@@ -305,6 +330,10 @@ def as_text(chaps):
 
 def main():
     data = build()
+    if '--dropped' in sys.argv:                  # 注記として除いた行の一覧（本文の行が混じっていないか確認する）
+        for n, t in DROPPED:
+            print('(%s) %s' % (n, t))
+        return
     if '--text' in sys.argv:
         for k in sorted(data['koshu']):
             print('===== 工種', k)
@@ -312,6 +341,16 @@ def main():
         print('===== 総合')
         print(as_text(data['sogo']))
         return
+    # 記録用の言葉が本文に残っていないか確認する（残っていたら変換の決まりを直す）
+    bad = re.compile(r'原本|アプリ|利用者|読み取り|同文|と同じ|Claude|`')
+    left = [l.get('text', ' | '.join(sum(l.get('rows', []), []))) for ch in list(data['koshu'].values()) + [data['sogo']]
+            for c in ch for l in c['lines']]
+    left = [t for t in left if bad.search(t)]
+    if left:
+        print('記録用の言葉が本文に残っています（%d 行）:' % len(left))
+        for t in left:
+            print('  ' + t[:100])
+        sys.exit(1)
     out = os.path.join(ROOT, 'data', 'honbun.js')
     head = ('/* 本文シートのデータ（自動生成。手で編集しない）\n'
             ' * python3 tools/build_honbun.py で docs/honsho の作成例の記録から作る。\n'

@@ -2654,7 +2654,31 @@
 
   /* ---------- ブック全体 ---------- */
 
+  // 本文データ（約170KB）は本文を出力するときだけ読み込む
+  var honbunLoading = null;
+  function loadHonbun() {
+    if (window.HONBUN_DATA) { return Promise.resolve(window.HONBUN_DATA); }
+    if (!honbunLoading) {
+      honbunLoading = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'data/honbun.js';
+        s.onload = function () { resolve(window.HONBUN_DATA); };
+        s.onerror = function () { honbunLoading = null; reject(new Error('本文データを読み込めませんでした')); };
+        document.head.appendChild(s);
+      });
+    }
+    return honbunLoading;
+  }
+
+  // 本文は「工種別」のときだけ工種の施工計画書、それ以外は総合施工計画書の本文にする
+  function honbunIsSogo(state) { return state.docType !== 'koshu'; }
+
   function build(data, state) {
+    var need = state && state.opt && state.opt.honbun === true;
+    return (need ? loadHonbun() : Promise.resolve()).then(function () { return buildNow(data, state); });
+  }
+
+  function buildNow(data, state) {
     var ExcelJS = window.ExcelJS;
     if (!ExcelJS) { return Promise.reject(new Error('ExcelJS が読み込まれていません')); }
     var info = state.info || {};
@@ -2670,7 +2694,7 @@
     wb.created = new Date();
 
     if (opt.cover !== false) { addCover(wb, info); }
-    if (opt.honbun === true) { addHonbun(wb, info, Number(state.koshu) || 0, state.docType === 'sogo'); }
+    if (opt.honbun === true) { addHonbun(wb, info, Number(state.koshu) || 0, honbunIsSogo(state)); }
     if (opt.gaiyo !== false) { addGaiyo(wb, info, chapters, opt.kanri !== false); }
     if (opt.soshiki !== false) { addSoshiki(wb, info); addHoan(wb); addHinshitsu(wb, info); }
     if (opt.tenpu !== false) {
@@ -2719,6 +2743,8 @@
     collect: collect,
     parseDocs: parseDocs,
     wareki: wareki,
-    KOSHU: KOSHU
+    KOSHU: KOSHU,
+    loadHonbun: loadHonbun,
+    honbunIsSogo: honbunIsSogo
   };
 })();

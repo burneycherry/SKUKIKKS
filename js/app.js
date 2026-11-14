@@ -381,16 +381,8 @@
     var withHannyu = state.opt.hannyu === true;
     var withSatsuei = state.opt.satsuei === true;
     var withHonbun = state.opt.honbun === true;
-    var byKoshu = typeByKoshu || withCheck || withHannyu || withSatsuei || (withHonbun && state.docType !== 'sogo');
-    if (withHonbun) {
-      if (state.docType === 'sogo') {
-        hint += '本文は、総合施工計画書の作成例の文章（1.〜10.）を出力します。';
-      } else if (window.HONBUN_DATA && window.HONBUN_DATA.koshu[state.koshu]) {
-        hint += '本文は、「工種」で選んだ工種の作成例の文章（1.〜7.）を出力します。';
-      } else {
-        hint += 'この工種の本文は作成例が無いため出力しません。';
-      }
-    }
+    var byKoshu = typeByKoshu || withCheck || withHannyu || withSatsuei;
+    if (withHonbun) { hint += honbunHint(); }
     if (withSatsuei && !(window.SATSUEI_DATA && window.SATSUEI_DATA[state.koshu])) {
       hint += 'この工種の撮影箇所は作成例に無いため、撮影対象表（電気設備工事編）の全行を出力します。';
     }
@@ -413,6 +405,22 @@
     }
     $('docTypeHint').textContent = hint;
     $('koshuField').hidden = !byKoshu;
+  }
+
+  // 本文の案内。章の範囲は本文データから作る（データは本文にチェックしたときに読み込み、読み込み後に案内を更新する）
+  function honbunHint() {
+    var ex = window.SekokanExport;
+    var d = window.HONBUN_DATA;
+    if (!d) {
+      ex.loadHonbun().then(function () { showDocType(); }, function () {});
+      return '本文は、作成例の文章を出力します。';
+    }
+    var sogo = ex.honbunIsSogo(state);
+    var chaps = sogo ? d.sogo : d.koshu[state.koshu];
+    if (!chaps || !chaps.length) { return 'この工種の本文は作成例が無いため出力しません。'; }
+    var range = '（' + chaps[0].no + '.〜' + chaps[chaps.length - 1].no + '.）';
+    return sogo ? '本文は、総合施工計画書の作成例の文章' + range + 'を出力します。'
+      : '本文は、「工種」で選んだ工種の作成例の文章' + range + 'を出力します。';
   }
 
   // 書類の種類を切り替え、書類名と出力内容を初期値にする
