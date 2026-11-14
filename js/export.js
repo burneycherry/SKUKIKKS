@@ -1846,13 +1846,73 @@
       chui: '1. 機器操作時は、誤操作しないよう注意する。\n2. 連絡方法を確認する。',
       biko: '試験記録は「インターロック試験成績表」に結果を記入する。' },
     { no: '⑤-ハ', title: '保護連動試験',
-      mokuteki: '各機器・装置の動作に異常のないことを確認する。',
+      mokuteki: '各機器、装置の動作に異常のないことを確認する。',
       naiyo: '(1)保護連動、故障表示試験\n　保護継電器を模擬動作させ、遮断器のトリップ及び故障表示・故障警報を現場盤及び監視盤にて確認する。\n\n' +
         '(2)中央監視動作試験\n　現場盤より模擬の故障等を発生させ、故障表示・故障警報を確認する。中央監視装置より機器操作を行い、表示を確認する。',
       kijun: '製造者の社内規格による試験方法により、製作図にある保護連動表に従って動作すること。',
       chui: '1. 機器操作時は、誤操作しないよう注意する。\n2. 連絡方法を確認する。',
       biko: '試験記録は「保護連動試験成績表」に結果を記入する。' }
   ];
+
+  // 別添1 使用前自主検査工程表（予定の網掛けは作成例の時間帯。Excel で書き換える）
+  function addKensaKotei(wb) {
+    var ws = portraitSheet(wb, sheetName('別添1 使用前自主検査工程表'));
+    var cols = [{ width: 4 }, { width: 26 }, { width: 6 }];
+    var i;
+    for (i = 0; i < 10; i++) { cols.push({ width: 7 }); }
+    ws.columns = cols;
+    var H = { size: 10, v: 'middle', h: 'center', fill: true };
+    var C = { size: 10, v: 'middle', h: 'center' };
+    var GRAY = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF808080' } };
+    var times = ['8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', ''];
+    // [検査項目, 予定の列（times の添字。-1 は無し）]
+    var items = [['外観検査', 2], ['接地抵抗試験', 3], ['絶縁抵抗測定（高圧）\n6.6kV回路絶縁耐力試験', 4],
+      ['絶縁抵抗測定（低圧）', 6], ['保護装置試験\n（保護継電器/インターロック/保護連動）', 7], ['', -1]];
+    textLine(ws, 1, 13, '別添1　使 用 前 自 主 検 査 工 程 表', 14, true, 30);
+    box(ws, 2, 1, 3, 3, '検　査　項　目', H);
+    box(ws, 2, 4, 2, 13, '令和○年○○月○○日', C);
+    times.forEach(function (t, k) { box(ws, 3, 4 + k, 3, 4 + k, t, C); });
+    ws.getRow(2).height = 20;
+    ws.getRow(3).height = 20;
+    items.forEach(function (it, n) {
+      var r = 4 + n * 2;
+      box(ws, r, 2, r + 1, 2, it[0], { size: 10, v: 'middle' });
+      box(ws, r, 3, r, 3, '予定', C);
+      box(ws, r + 1, 3, r + 1, 3, '実施', C);
+      times.forEach(function (t, k) {
+        box(ws, r, 4 + k, r, 4 + k, '', C);
+        box(ws, r + 1, 4 + k, r + 1, 4 + k, '', C);
+        if (k === it[1]) { ws.getCell(r, 4 + k).fill = GRAY; }
+      });
+      ws.getRow(r).height = 22;
+      ws.getRow(r + 1).height = 22;
+    });
+    box(ws, 4, 1, 15, 1, '受変電設備', { size: 10, v: 'middle', h: 'center', vertical: true, wrap: false, fill: true });
+    ws.getRow(16).height = 8;
+    textLine(ws, 17, 13, '（予定の網掛けは作成例の時間帯です。セルの塗りつぶしを変えて、実際の工程に合わせてください。）', 9, false, 18, 'left');
+    return ws;
+  }
+
+  // 別添2 試験機器・保安用具管理台帳
+  function addKensaDaicho(wb) {
+    var ws = portraitSheet(wb, sheetName('別添2 試験機器・保安用具管理台帳'));
+    ws.columns = [{ width: 4 }, { width: 18 }, { width: 14 }, { width: 10 }, { width: 12 }, { width: 10 }, { width: 10 },
+      { width: 16 }];
+    var H = { size: 10, v: 'middle', h: 'center', fill: true };
+    var C = { size: 10, v: 'middle', h: 'center' };
+    var heads = ['No', '試験装置・\n保安用具名称', '使用目的', '型式', '定格', '製造者名', '製造番号', '校正又は\n点検有効期限'];
+    var rei = ['接地抵抗計', '接地抵抗測定', '○○○○', '0～1,000Ω', '○○○○', '○○○○', '令和X年X月X日'];
+    var n, k;
+    textLine(ws, 1, 8, '別添2　試 験 機 器 ・ 保 安 用 具 管 理 台 帳', 14, true, 30);
+    heads.forEach(function (h, i) { box(ws, 2, 1 + i, 2, 1 + i, h, H); });
+    ws.getRow(2).height = 32;
+    for (n = 1; n <= 19; n++) {
+      box(ws, 2 + n, 1, 2 + n, 1, n, C);
+      for (k = 0; k < 7; k++) { box(ws, 2 + n, 2 + k, 2 + n, 2 + k, n === 1 ? rei[k] : '', C); }
+      ws.getRow(2 + n).height = 24;
+    }
+    return ws;
+  }
 
   function addKensa(wb) {
     KENSA.forEach(function (k) {
@@ -1864,6 +1924,8 @@
     addKensaShochi(wb);
     addKensaKeidenki(wb);
     KENSA_GO.forEach(function (k) { addKensaSheet(wb, k); });
+    addKensaKotei(wb);
+    addKensaDaicho(wb);
   }
 
   function addTable(wb, name, title, info, heads, widths, rows, centerCols) {
