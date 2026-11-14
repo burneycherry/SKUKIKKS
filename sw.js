@@ -1,5 +1,5 @@
 /* オフライン用キャッシュ。ファイルを更新したら VERSION を上げること */
-var VERSION = 'sekokan-v36';
+var VERSION = 'sekokan-v37';
 var FILES = [
   './',
   'index.html',
@@ -9,6 +9,7 @@ var FILES = [
   'data/kanrihyo.js',
   'data/checklist.js',
   'data/satsuei.js',
+  'data/honbun.js',
   'vendor/exceljs.min.js',
   'manifest.webmanifest',
   'icons/icon-180.png',

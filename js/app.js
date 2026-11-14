@@ -9,7 +9,7 @@
   var INFO_KEYS = ['docTitle', 'kojiName', 'basho', 'kokiFrom', 'kokiTo', 'hacchu',
     'juchu', 'dairinin', 'gijutsu', 'sakuseisha', 'sakuseiBi',
     'kojiKanri', 'kanri', 'sekkei', 'yoto', 'chiiki', 'kozo', 'kibo', 'shobo', 'bunrui'];
-  var OPT_KEYS = ['cover', 'gaiyo', 'soshiki', 'tenpu', 'kanri', 'check', 'hannyu', 'jishu', 'shiunten', 'hokoku', 'satsuei', 'list', 'docs', 'photos', 'page'];
+  var OPT_KEYS = ['cover', 'gaiyo', 'soshiki', 'tenpu', 'kanri', 'check', 'hannyu', 'jishu', 'shiunten', 'hokoku', 'satsuei', 'honbun', 'list', 'docs', 'photos', 'page'];
   // 章内で最初の項目を選んだときに一緒に選ぶ共通項目
   var COMMON = ['共通事項', '機材の試験', '施工の立会い及び試験', '機器及び完成設備'];
 
@@ -18,27 +18,27 @@
     sogo: {
       title: '総合施工計画書',
       hint: '表紙・工事概要・組織表・添付シートを出力します。管理表は含めません（工事種目の選択は不要）。',
-      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: true, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false }
+      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: true, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, honbun: true }
     },
     koshu: {
       title: '',
       hint: '工種ごとに作成します。表紙と、選択した工事種目の管理表（品質計画）・資料一覧・写真一覧を出力します。',
-      opt: { cover: true, gaiyo: false, soshiki: false, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false }
+      opt: { cover: true, gaiyo: false, soshiki: false, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, honbun: true }
     },
     check: {
       title: '',
       hint: '工種ごとの品質管理チェックシート（別添1）だけを、施工計画書とは別のファイルで出力します。',
-      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: true, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false }
+      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: true, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, honbun: false }
     },
     satsuei: {
       title: '',
       hint: '工種ごとの工事写真の撮影箇所（別添2）だけを、施工計画書とは別のファイルで出力します。',
-      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: true }
+      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: true, honbun: false }
     },
     kan: {
       title: '施工計画書',
       hint: '簡略的な工事向け。表紙・工事概要・組織表と管理表を1冊にまとめて出力します。',
-      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false }
+      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, honbun: false }
     }
   };
 
@@ -126,6 +126,7 @@
     if (state.opt.shiunten === undefined) { state.opt.shiunten = false; }
     if (state.opt.hokoku === undefined) { state.opt.hokoku = false; }
     if (state.opt.satsuei === undefined) { state.opt.satsuei = false; }
+    if (state.opt.honbun === undefined) { state.opt.honbun = false; }
     OPT_KEYS.forEach(function (k) {
       if (state.opt[k] === undefined) { state.opt[k] = true; }
     });
@@ -379,7 +380,17 @@
     // チェックシートを出力するときは、書類の種類にかかわらず工種を選べるようにする
     var withHannyu = state.opt.hannyu === true;
     var withSatsuei = state.opt.satsuei === true;
-    var byKoshu = typeByKoshu || withCheck || withHannyu || withSatsuei;
+    var withHonbun = state.opt.honbun === true;
+    var byKoshu = typeByKoshu || withCheck || withHannyu || withSatsuei || (withHonbun && state.docType !== 'sogo');
+    if (withHonbun) {
+      if (state.docType === 'sogo') {
+        hint += '本文は、総合施工計画書の作成例の文章（1.〜10.）を出力します。';
+      } else if (window.HONBUN_DATA && window.HONBUN_DATA.koshu[state.koshu]) {
+        hint += '本文は、「工種」で選んだ工種の作成例の文章（1.〜7.）を出力します。';
+      } else {
+        hint += 'この工種の本文は作成例が無いため出力しません。';
+      }
+    }
     if (withSatsuei && !(window.SATSUEI_DATA && window.SATSUEI_DATA[state.koshu])) {
       hint += 'この工種の撮影箇所は作成例に無いため、撮影対象表（電気設備工事編）の全行を出力します。';
     }
