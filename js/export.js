@@ -1620,10 +1620,13 @@
     if (opt.hannyu === true) { var kq = Number(state.koshu) || 0;
       addHannyu(wb, info, kq);
       addHannyuTaisei(wb, info, kq);
-      addHannyuZu(wb, info, kq);
-      addWire(wb, info, kq);
+      // 太陽光発電装置（作成例 (10)）には搬入経路・ワイヤロープ・アンカーの項が無いため出力しない（利用者の指示）
+      if (kq !== 9) {
+        addHannyuZu(wb, info, kq);
+        addWire(wb, info, kq);
+      }
       addSuetsuke(wb, info, kq);
-      addAnchor(wb, info);
+      if (kq !== 9) { addAnchor(wb, info); }
     }
     if (opt.check === true) { addChecks(wb, info, Number(state.koshu) || 0); }
     if (!wb.worksheets.length) { return Promise.reject(new Error('出力するシートがありません。出力内容を選んでください')); }
