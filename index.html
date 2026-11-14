@@ -34,6 +34,7 @@
         <button type="button" class="seg-btn" data-type="koshu">工種別</button>
         <button type="button" class="seg-btn" data-type="kan">施工計画書のみ</button>
         <button type="button" class="seg-btn" data-type="check">チェックシート</button>
+        <button type="button" class="seg-btn" data-type="satsuei">撮影箇所</button>
       </div>
       <p class="hint" id="docTypeHint"></p>
       <label class="field" id="koshuField" hidden><span>工種</span>
@@ -108,6 +109,7 @@
       <label class="check"><input type="checkbox" id="o_tenpu"><span>総合施工計画書の添付シート（工程表・工種別一覧・安全衛生・連絡網・仮設計画）</span></label>
       <label class="check"><input type="checkbox" id="o_kanri"><span>管理表（品質計画）</span></label>
       <label class="check"><input type="checkbox" id="o_check"><span>品質管理チェックシート（工種別の別添1）</span></label>
+      <label class="check"><input type="checkbox" id="o_satsuei"><span>工事写真の撮影箇所（工種別の別添2）</span></label>
       <label class="check"><input type="checkbox" id="o_hannyu"><span>機器搬入計画書・体制表・ワイヤロープの選定・据付け施工要領ほか（搬入・据付け工事）</span></label>
       <label class="check"><input type="checkbox" id="o_jishu"><span>使用前自主検査の検査項目（外観検査・接地抵抗測定・絶縁抵抗測定・絶縁耐力試験の手順とフロー・保護継電器試験ほか。工程表・管理台帳つき）</span></label>
       <label class="check"><input type="checkbox" id="o_shiunten"><span>総合試運転のフローとチェックリスト（停電試験・復電試験・火災発生試験・火災鎮火試験）</span></label>
@@ -139,6 +141,7 @@
 <script src="vendor/exceljs.min.js"></script>
 <script src="data/kanrihyo.js"></script>
 <script src="data/checklist.js"></script>
+<script src="data/satsuei.js"></script>
 <script src="js/export.js"></script>
 <script src="js/app.js"></script>
 </body>

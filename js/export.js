@@ -2296,6 +2296,55 @@
     HOKOKU.forEach(function (h) { addHokokuSheet(wb, info, h); });
   }
 
+  /* ---------- 工事写真の撮影箇所（工種別の別添2。「営繕工事写真撮影要領」撮影対象表（電気設備工事編）の抜粋） ---------- */
+
+  function addSatsuei(wb, info, koshu) {
+    var all = window.SATSUEI_DATA || {};
+    if (!(koshu >= 0 && koshu <= KOSHU.length)) { koshu = 0; }
+    var name = koshu < KOSHU.length ? KOSHU[koshu].replace(/施工計画書$|計画書$/, '') : (info.docTitle || '');
+    var rows = all[koshu];
+    var nuki = !!(rows && rows.length);
+    if (!nuki) { rows = all.all || []; }
+    var ws = portraitSheet(wb, '工事写真の撮影箇所');
+    ws.pageSetup.fitToHeight = 0;
+    ws.pageSetup.printTitlesRow = '4:4';
+    ws.columns = [{ width: 15 }, { width: 17 }, { width: 50 }, { width: 10 }];
+    var H = { size: 10, v: 'middle', h: 'center', fill: true };
+    var C = { size: 10, v: 'middle' };
+    textLine(ws, 1, 4, '工事写真の撮影箇所', 16, true, 30);
+    textLine(ws, 2, 4, '工事名　' + (info.kojiName || '') + '　／　' + name, 10, false, 20, 'left');
+    textLine(ws, 3, 4, '（「営繕工事写真撮影要領」令和5年版' + (nuki ? 'の抜粋' : '') + '）撮影対象表（電気設備工事編）', 10, false, 20, 'left');
+    ['工事種目又は分類', '撮影項目', '撮影対象', '撮影時期'].forEach(function (t, i) { box(ws, 4, 1 + i, 4, 1 + i, t, H); });
+    ws.getRow(4).height = 20;
+    var r0 = 5;
+    rows.forEach(function (row, i) {
+      var r = r0 + i;
+      box(ws, r, 1, r, 1, row[0], { size: 10, v: 'top' });
+      box(ws, r, 2, r, 2, row[1], { size: 10, v: 'top' });
+      box(ws, r, 3, r, 3, row[2], C);
+      box(ws, r, 4, r, 4, row[3], { size: 10, v: 'middle', h: 'center' });
+      ws.getRow(r).height = Math.max(22, lineCount(row[2], 50, 10) * 13.5 + 8);
+    });
+    // 同じ工事種目・撮影項目が続く行は縦に結合する（原本と同じ）。全行を出すときはページをまたぐため結合しない
+    if (nuki) {
+      [0, 1].forEach(function (col) {
+        var s = 0;
+        var i;
+        for (i = 1; i <= rows.length; i++) {
+          var same = i < rows.length && rows[i][col] === rows[s][col] && (col === 0 || rows[i][0] === rows[s][0]);
+          if (!same) {
+            if (i - 1 > s) { ws.mergeCells(r0 + s, col + 1, r0 + i - 1, col + 1); }
+            s = i;
+          }
+        }
+      });
+    }
+    var e = r0 + rows.length;
+    ws.getRow(e).height = 8;
+    textLine(ws, e + 1, 4, '※受注者が作成した資料を添付する場合は、営繕工事写真撮影要領を満たしていることを記載する。', 9, false, 18, 'left');
+    return ws;
+  }
+
   function addTable(wb, name, title, info, heads, widths, rows, centerCols) {
     var ws = wb.addWorksheet(name, {
       pageSetup: pageSetup('landscape', '1:2'),
@@ -2568,6 +2617,7 @@
     if (opt.shiunten === true) { addShiunten(wb, info); }
     if (opt.hokoku === true) { addHokoku(wb, info); }
     if (opt.check === true) { addChecks(wb, info, Number(state.koshu) || 0); }
+    if (opt.satsuei === true) { addSatsuei(wb, info, Number(state.koshu) || 0); }
     if (!wb.worksheets.length) { return Promise.reject(new Error('出力するシートがありません。出力内容を選んでください')); }
 
     return wb.xlsx.writeBuffer().then(function (buf) {
