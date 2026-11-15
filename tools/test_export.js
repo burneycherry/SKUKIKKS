@@ -22,6 +22,9 @@ const fs = require('fs');
     for (let k = 0; k <= 16; k++) cases.push(['koshu' + k, { docType: 'koshu', koshu: k, info, sel: all, opt: on }]);
     cases.push(['sogo', { docType: 'sogo', koshu: 0, info, sel: {}, opt: Object.assign({}, on, { kanri: false, list: false }) }]);
     cases.push(['seko', { docType: 'seko', koshu: 0, info, sel: {}, opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, list: false, docs: false, photos: false, seko: true, shinsei: true } }]);
+    // 施工チェックシートの章を一部だけ選んだとき（一般共通事項と配管工事）
+    cases.push(['seko_sub', { docType: 'seko', koshu: 0, info, sel: {}, sekoChap: { ippan: true, haikan: true, haisen: false },
+      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, list: false, docs: false, photos: false, seko: true, shinsei: false } }]);
     cases.push(['kan_nopage', { docType: 'kan', koshu: 3, info: {}, sel: all, opt: Object.assign({}, on, { page: false, honbun: false }) }]);
     const r = {};
     for (const [n, st] of cases) {

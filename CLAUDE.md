@@ -26,6 +26,7 @@
 | `tools/build_honbun.py` | `docs/honsho` の作成例の記録 → `data/honbun.js` 変換（記録を直したら再実行） |
 | `tools/build_sekocheck.py` | `docs/sekocheck` の読み取り記録 → `data/sekocheck.js` 変換（SC 番号で決めた表記の修正は `FIX_TEXT`・`fix_ref`） |
 | `tools/test_export.js` / `compare_xlsx.py` | 出力の回帰テスト（全工種の Excel を作って変更前と比べる） |
+| `tools/check_sekocheck.py` | 施工チェックシートの出力の検査（項番号の件数・丸数字の対応・切り詰め・章の選択）。`test_export.js` の出力に対して実行 |
 | `source/` | 国交省 管理表（令和8年版）原本 xlsx 9ファイル |
 | `vendor/` | ExcelJS 4.4.0（MIT。ライセンス同梱） |
 | `sw.js` / `manifest.webmanifest` / `icons/` | PWA 関連 |
@@ -105,6 +106,7 @@ python3 tools/compare_xlsx.py /tmp/before /tmp/after
 ```
 
   （変更前に1回目、変更後に `/tmp/after` へ2回目を実行。作成日時以外が完全一致なら `differences 0`）
+- 施工チェックシートを変えたときは `python3 tools/check_sekocheck.py /tmp/after` で `OK` になることを確かめる
 
 ## 変更時の注意
 

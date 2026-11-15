@@ -273,6 +273,41 @@ window.SKUKIKKSExport = { _: {} };
     return ws;
   }
 
+  // r1〜r2 の合計高さが need に満たなければ最終行を広げる
+  function pad(heights, r1, r2, need) {
+    var sum = 0;
+    for (var i = r1; i <= r2; i++) { sum += heights[i]; }
+    if (sum < need) { heights[r2] += (need - sum); }
+  }
+
+  // 同じ見出しが続くブロック（{r1, r2}）の col 列を縦結合する。合計の高さが CHUNK を超えるごとに区切って見出しを繰り返し、
+  // 見出しの文字に高さが足りないときは pad で最後の行を広げる（管理表の区分・項目、申請手続一覧表の工事区分）
+  function mergeLabels(ws, heights, blocks, col, keyFn, textFn, needFn, vertical) {
+    var i = 0;
+    while (i < blocks.length) {
+      var key = keyFn(blocks[i]);
+      var start = blocks[i].r1;
+      var end = blocks[i].r2;
+      var acc = 0;
+      var j = i;
+      while (j < blocks.length && keyFn(blocks[j]) === key) {
+        for (var q = blocks[j].r1; q <= blocks[j].r2; q++) { acc += heights[q]; }
+        end = blocks[j].r2;
+        j++;
+        if (acc >= CHUNK) { break; }
+      }
+      var text = textFn(blocks[i]);
+      var cell = ws.getCell(start, col);
+      cell.value = text;
+      if (vertical) {
+        style(cell, { vertical: true, h: 'center', v: 'top', wrap: false });
+      }
+      if (end > start) { ws.mergeCells(start, col, end, col); }
+      pad(heights, start, end, needFn(text));
+      i = j;
+    }
+  }
+
   // ほかのファイルから使う部品
   X.FONT = FONT;
   X.FS = FS;
@@ -302,4 +337,6 @@ window.SKUKIKKSExport = { _: {} };
   X.KOSHU = KOSHU;
   X.sheetName = sheetName;
   X.addTable = addTable;
+  X.pad = pad;
+  X.mergeLabels = mergeLabels;
 })(window.SKUKIKKSExport._);

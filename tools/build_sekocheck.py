@@ -78,22 +78,25 @@ def parse_chapter(cid, fname):
             title = m.group(1)
             if not title:
                 cur_kubun = None
+                cur_item = None
                 continue
             stage = '準備段階' if '準備段階' in title else ('施工段階' if '施工段階' in title else '')
             if cur_sheet is None or cur_sheet['stage'] != stage:
                 cur_sheet = {'stage': stage, 'kubun': []}
                 sheets.append(cur_sheet)
                 cur_kubun = None
+                cur_item = None
             continue
         m = re.match(r'^### (?:\[(検|立)\] )?(.+)$', ln)
         if m:
             mark, name = m.group(1) or '', m.group(2).strip()
             last = cur_sheet['kubun'][-1] if cur_sheet['kubun'] else None
             if last and last['name'] == name and last['mark'] == mark:
-                cur_kubun = last
+                cur_kubun = last        # 前のページから続く同じ区分（「（続き）」の項目は直前の項目にまとめる）
             else:
                 cur_kubun = {'name': name, 'mark': mark, 'items': []}
                 cur_sheet['kubun'].append(cur_kubun)
+                cur_item = None         # 別の区分の項目に「（続き）」をまとめないようにする
             continue
         if cur_kubun is None:
             continue
@@ -121,6 +124,12 @@ def parse_chapter(cid, fname):
             cur_item['t'] += '\n　' + body
             idx = cur_item['t'].count('\n')
             cur_item['ref'] += [[idx, r] for r in refs]
+    # 項目の無い区分は出力できないため除き、知らせる
+    for sh in sheets:
+        empty = [k['name'] for k in sh['kubun'] if not k['items']]
+        if empty:
+            print('警告: 項目の無い区分を除きました', fname, sh['stage'], empty, file=sys.stderr)
+        sh['kubun'] = [k for k in sh['kubun'] if k['items']]
     return sheets
 
 

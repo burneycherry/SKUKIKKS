@@ -140,11 +140,12 @@
     if (state.opt.honbun === undefined) { state.opt.honbun = false; }
     if (state.opt.seko === undefined) { state.opt.seko = false; }
     if (state.opt.shinsei === undefined) { state.opt.shinsei = false; }
-    // 施工チェックシートの章は、未保存のときはすべて選択にする
-    if (!state.sekoChap) {
-      state.sekoChap = {};
-      sekoChapters().forEach(function (c) { state.sekoChap[c.id] = true; });
-    }
+    // 施工チェックシートの章は、保存値に無い章（未保存・データを読めなかったとき・あとから増えた章）を選択にする。
+    // 外した章は false で保存するため、利用者が外した章は選択に戻らない
+    if (!state.sekoChap) { state.sekoChap = {}; }
+    sekoChapters().forEach(function (c) {
+      if (state.sekoChap[c.id] === undefined) { state.sekoChap[c.id] = true; }
+    });
     OPT_KEYS.forEach(function (k) {
       if (state.opt[k] === undefined) { state.opt[k] = true; }
     });
@@ -222,10 +223,20 @@
       if (on > 0) { totalChaps++; }
     });
     var needSel = state.opt.kanri !== false;   // 管理表を出力する書類は工事種目の選択が必要
-    $('summary').textContent = totalItems
+    var seko = state.opt.seko === true;
+    var sekoN = seko ? sekoCount() : 0;
+    var text = totalItems
       ? (totalChaps + '工事種目・' + totalItems + '項目 を選択中（管理項目 ' + totalRows + '行）')
       : (needSel ? '工事種目が選択されていません' : '工事種目の選択なしで出力できます');
-    $('exportBtn').disabled = needSel && totalItems === 0;
+    // 管理表を出さない書類で施工チェックシートを出すときは、管理表の選択数ではなく施工チェックシートの工事数を出す
+    if (seko && !needSel) {
+      text = sekoN ? ('施工チェックシート ' + sekoN + '工事を出力します') : '';
+    }
+    if (seko && sekoN === 0) {
+      text = '施工チェックシートの工事が選択されていません';
+    }
+    $('summary').textContent = text;
+    $('exportBtn').disabled = (needSel && totalItems === 0) || (seko && sekoN === 0);
   }
 
   function changed() {
@@ -383,6 +394,13 @@
 
   function koshuList() { return window.SKUKIKKSExport.KOSHU || []; }
 
+  // 施工チェックシートで選んでいる工事（章）の数
+  function sekoCount() {
+    var n = 0;
+    sekoChapters().forEach(function (c) { if (state.sekoChap && state.sekoChap[c.id]) { n++; } });
+    return n;
+  }
+
   function sekoChapters() {
     var f = window.SKUKIKKSExport.sekoChapters;
     return f ? f() : [];
@@ -397,9 +415,8 @@
       cb.type = 'checkbox';
       cb.checked = !!state.sekoChap[c.id];
       cb.addEventListener('change', function () {
-        if (cb.checked) { state.sekoChap[c.id] = true; } else { delete state.sekoChap[c.id]; }
-        save();
-        hideResult();
+        state.sekoChap[c.id] = cb.checked;
+        changed();
       });
       lab.appendChild(cb);
       lab.appendChild(el('span', null, c.no + '　' + c.name));

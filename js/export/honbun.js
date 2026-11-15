@@ -106,7 +106,6 @@
 
   // ほかのファイルから使う部品
   X.addHonbun = addHonbun;
-  X.honbunLoading = honbunLoading;
   X.loadHonbun = loadHonbun;
   X.honbunIsSogo = honbunIsSogo;
 })(window.SKUKIKKSExport._);

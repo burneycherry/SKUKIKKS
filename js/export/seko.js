@@ -5,8 +5,8 @@
 (function (X) {
   'use strict';
 
-  var FONT = X.FONT, box = X.box, lineCount = X.lineCount, portraitSheet = X.portraitSheet, sheetName = X.sheetName,
-    textLine = X.textLine, pageSetup = X.pageSetup, wareki = X.wareki;
+  var FONT = X.FONT, box = X.box, lineCount = X.lineCount, mergeLabels = X.mergeLabels, portraitSheet = X.portraitSheet,
+    sheetName = X.sheetName, style = X.style, textLine = X.textLine, pageSetup = X.pageSetup, wareki = X.wareki;
 
   // チェックシート本体の列幅（区分・チェックポイント・項番号・記録）と行の高さの見積もりに使う値
   var WA = 13, WB = 44, WC = 16, WD = 30;
@@ -16,7 +16,6 @@
   var MIN_H = 26;        // 1行の最小の高さ(pt)。短い項目でも記録欄に書ける高さを残す
   var ROW_MAX = 400;     // 1行の高さの上限(pt)。Excel の行の高さは 409pt までのため、これを超える項目だけ続きの行に分ける
   var CIRC = /^　[\u2460-\u2473\u3251-\u3255]/;   // 丸数字（①〜㉕）で始まる小項目の行
-  var MERGE_MAX = 420;   // 申請手続一覧表の工事区分の縦結合を区切る高さ(pt)
   var NO = { ippan: '1', haikan: '2-1', haisen: '2-2', kiki: '2-3', setchi: '2-4', rai: '2-5', kakuu: '2-6',
     chichu: '2-7', juhen: '3', kanshi: '4', iryo: '5' };
 
@@ -103,13 +102,21 @@
         if (CIRC.test(ln)) {
           head = idx === last ? '　 ' : ln.charAt(1) + ' ';
         } else {
-          head = idx === last ? '　 ' : ln.replace(/^　/, '').replace(/[（(].*$/, '').substring(0, 10) + '：';
+          head = idx === last ? '　 ' : subLabel(ln) + '：';
         }
       }
       out.push(head + p[1]);
       last = idx;
     });
     return out;
+  }
+
+  // 丸数字の無い小項目の見出し語（項番号の頭に付ける）。括弧書きの前の語、括弧で始まるときは括弧の中の語。10文字まで
+  function subLabel(ln) {
+    var base = ln.replace(/^　/, '');
+    var lab = base.replace(/[（(].*$/, '');
+    if (!lab) { lab = base.replace(/^[（(]/, '').replace(/[）)、，,／].*$/, ''); }
+    return lab.substring(0, 10);
   }
 
   // 行の高さ(pt)の見積もり（チェックポイント・項番号の列のうち高い方）。分けるかどうかの判定と、実際の行の高さの両方に使う
@@ -164,6 +171,7 @@
       var label = (k.mark ? '(' + k.mark + ')\n' : '') + k.name;
       var rows = [];
       k.items.forEach(function (it) { rows = rows.concat(splitItem(it)); });
+      if (!rows.length) { return; }      // 項目の無い区分は出さない（結合の範囲が作れないため）
       var hs = rows.map(function (row) { return Math.min(409, Math.max(MIN_H, row.h)); });
       // 区分名は縦結合したセルに入るため、各行ではなく区分全体の高さで足りるかを見る。足りないときは最後の行を広げる
       var need = Math.ceil(lineCount(label, WA, 10) * LH_T + PAD);
@@ -194,20 +202,6 @@
 
   /* ---------- 参考資料 主な官公署その他への申請手続一覧表 ---------- */
 
-  // 同じ値が続く行を縦に結合する（高さ MERGE_MAX ごとに区切る）
-  function mergeSame(ws, r0, rows, col, heights, same, opt) {
-    var s = 0;
-    var acc = heights[0];
-    var i;
-    for (i = 1; i <= rows.length; i++) {
-      var cont = i < rows.length && same(rows[i], rows[s]) && acc + heights[i] <= MERGE_MAX;
-      if (cont) { acc += heights[i]; continue; }
-      box(ws, r0 + s, col, r0 + i - 1, col, rows[s][col - 1], opt);
-      s = i;
-      acc = i < rows.length ? heights[i] : 0;
-    }
-  }
-
   function addShinsei(wb, info) {
     var d = data().shinsei;
     if (!d) { return null; }
@@ -225,22 +219,26 @@
     d.heads.slice(2).forEach(function (t, i) { box(ws, 3, 3 + i, 3, 3 + i, t, H); });
     ws.getRow(3).height = 20;
     var r0 = 4;
-    var heights = d.rows.map(function (row) {
-      var n = 1;
-      row.forEach(function (v, i) { if (i >= 2) { n = Math.max(n, lineCount(v, W[i], 9)); } });
-      return Math.max(24, n * 12.5 + 6);
-    });
+    var heights = {};          // 行番号 → 高さ。工事区分の結合で文字に足りない分は mergeLabels が広げる
     d.rows.forEach(function (row, i) {
       var r = r0 + i;
+      var n = 1;
       row.forEach(function (v, c) {
-        if (c >= 2) { box(ws, r, c + 1, r, c + 1, v, { size: 9, v: 'top' }); }
+        if (c >= 2) {
+          box(ws, r, c + 1, r, c + 1, v, { size: 9, v: 'top' });
+          n = Math.max(n, lineCount(v, W[c], 9));
+        }
       });
-      ws.getRow(r).height = heights[i];
+      style(ws.getCell(r, 1), { size: 9 });
+      style(ws.getCell(r, 2), { size: 9, v: 'middle', h: 'center' });
+      heights[r] = Math.max(24, n * 12.5 + 6);
     });
-    var V = { size: 9, v: 'middle', h: 'center', vertical: true };
-    mergeSame(ws, r0, d.rows, 1, heights, function (a, b) { return a[0] === b[0]; }, V);
-    mergeSame(ws, r0, d.rows, 2, heights, function (a, b) { return a[0] === b[0] && a[1] === b[1]; },
-      { size: 9, v: 'middle', h: 'center' });
+    var blocks = d.rows.map(function (row, i) { return { r1: r0 + i, r2: r0 + i, dai: row[0], sho: row[0] + '\u0000' + row[1], text: row[1] }; });
+    mergeLabels(ws, heights, blocks, 2, function (b) { return b.sho; }, function (b) { return b.text; },
+      function (text) { return lineCount(text, W[1], 9) * 12.5 + 6; }, false);
+    mergeLabels(ws, heights, blocks, 1, function (b) { return b.dai; }, function (b) { return b.dai; },
+      function (text) { return text.length * 11.5 + 8; }, true);
+    Object.keys(heights).forEach(function (key) { ws.getRow(Number(key)).height = heights[key]; });
     var r = r0 + d.rows.length;
     ws.getRow(r).height = 8;
     d.notes.forEach(function (t) {

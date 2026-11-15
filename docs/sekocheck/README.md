@@ -16,4 +16,5 @@
 - `python3 tools/build_sekocheck.py` で `data/sekocheck.js` を作る（記録を直したら再実行し、`sw.js` の `VERSION` を上げる）
 - 原本から表記を変えたもの（`00_kakunin.md` の SC 番号）は変換ツールの `FIX_TEXT`・`fix_ref`・`parse_shinsei` に書く
 - 「【曖昧】（…）」の注記と「（以下、空欄の行が…）」は出力しない。白紙・空白の記入用紙のページも出力しない
+- 変換ツールは項目の無い区分を除いて警告する。出力後は `tools/check_sekocheck.py` で検査する
 - 出力の仕様は `docs/shiyo/shorui.md`・`docs/shiyo/excel.md`
