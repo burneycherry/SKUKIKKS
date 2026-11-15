@@ -1,5 +1,5 @@
 /* オフライン用キャッシュ。ファイルを更新したら VERSION を上げること */
-var VERSION = 'SKUKIKKS-v47';
+var VERSION = 'SKUKIKKS-v48';
 var FILES = [
   './',
   'index.html',
