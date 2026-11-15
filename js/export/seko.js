@@ -8,8 +8,8 @@
   var FONT = X.FONT, box = X.box, lineCount = X.lineCount, portraitSheet = X.portraitSheet, sheetName = X.sheetName,
     textLine = X.textLine, pageSetup = X.pageSetup, wareki = X.wareki;
 
-  var SUB_MAX = 8;       // 1行に入れる小項目（①…）の数。多い項目は続きの行に分け、記録欄を確保する
-  var MERGE_MAX = 420;   // 区分の縦結合を区切る高さ(pt)。ページをまたいでも区分名が出るようにする
+  var ROW_MAX = 400;     // 1行の高さの上限(pt)。Excel の行の高さは 409pt までのため、これを超える項目だけ続きの行に分ける
+  var MERGE_MAX = 420;   // 申請手続一覧表の工事区分の縦結合を区切る高さ(pt)
   var NO = { ippan: '1', haikan: '2-1', haisen: '2-2', kiki: '2-3', setchi: '2-4', rai: '2-5', kakuu: '2-6',
     chichu: '2-7', juhen: '3', kanshi: '4', iryo: '5' };
 
@@ -97,24 +97,39 @@
     return out;
   }
 
-  // 1項目を出力用の行に分ける（小項目が多いときは SUB_MAX ずつ）。戻り値 [{t, ref:[...]}]
+  // 行の高さ(pt)の見積もり（チェックポイント・項番号の列のうち高い方）
+  function rowHeight(t, refs) {
+    return Math.ceil(Math.max(lineCount(t, 44, 10) * 13.5, lineCount(refs.join('\n'), 16, 9) * 12.5) + 8);
+  }
+
+  // 1項目を1行にする。Excel の行の高さの上限を超える項目（配管工事の「配管図」など）だけ、小項目の区切りで
+  // 続きの行（「（続き）」）に分ける。戻り値 [{t, ref:[...]}]
   function splitItem(it) {
+    var all = refLines(it.ref);
+    if (rowHeight(it.t, all) <= ROW_MAX) { return [{ t: it.t, ref: all }]; }
     var lines = it.t.split('\n');
     var head = lines[0];
-    var subs = lines.slice(1);
-    var circ = subs.filter(function (s) { return /^　[①-⑳㉑-㉕]/.test(s); }).length;
-    if (circ <= SUB_MAX) { return [{ t: it.t, ref: refLines(it.ref) }]; }
     var rows = [];
-    var i;
-    for (i = 0; i < subs.length; i += SUB_MAX) {
-      var part = subs.slice(i, i + SUB_MAX);
-      var marks = part.map(function (s) { return s.charAt(1); });
-      var refs = it.ref.filter(function (r) {
+    var part = [];
+    function refsFor(subs, first) {
+      var marks = subs.map(function (x) { return x.charAt(1); });
+      return refLines(it.ref.filter(function (r) {
         var m = r.charAt(0);
-        return marks.indexOf(m) >= 0 || (i === 0 && !/[①-⑳㉑-㉕]/.test(m));
-      });
-      rows.push({ t: (i === 0 ? head : head + '（続き）') + '\n' + part.join('\n'), ref: refLines(refs) });
+        return marks.indexOf(m) >= 0 || (first && !/[\u2460-\u2473\u3251-\u3255]/.test(m));
+      }));
     }
+    function text(subs, first) { return (first ? head : head + '（続き）') + '\n' + subs.join('\n'); }
+    lines.slice(1).forEach(function (ln) {
+      var first = rows.length === 0;
+      var next = part.concat([ln]);
+      if (part.length && rowHeight(text(next, first), refsFor(next, first)) > ROW_MAX) {
+        rows.push({ t: text(part, first), ref: refsFor(part, first) });
+        part = [ln];
+      } else {
+        part = next;
+      }
+    });
+    if (part.length) { rows.push({ t: text(part, rows.length === 0), ref: refsFor(part, rows.length === 0) }); }
     return rows;
   }
 
@@ -141,22 +156,15 @@
       var rows = [];
       k.items.forEach(function (it) { rows = rows.concat(splitItem(it)); });
       var start = r;
-      var acc = 0;
       rows.forEach(function (row) {
         var refText = row.ref.join('\n');
         var n = Math.max(lineCount(row.t, WB, 10) * 13.5, lineCount(refText, WC, 9) * 12.5,
           lineCount(label, WA, 10) * 13.5);
-        var h = Math.max(26, Math.ceil(n + 8));
-        if (acc > 0 && acc + h > MERGE_MAX) {          // 区分の結合を区切る
-          box(ws, start, 1, r - 1, 1, label, { size: 10, v: 'top' });
-          start = r;
-          acc = 0;
-        }
+        var h = Math.min(409, Math.max(26, Math.ceil(n + 8)));
         box(ws, r, 2, r, 2, row.t, { size: 10, v: 'top' });
         box(ws, r, 3, r, 3, refText, { size: 9, v: 'top' });
         box(ws, r, 4, r, 4, '', { size: 10, v: 'top' });
         ws.getRow(r).height = h;
-        acc += h;
         r++;
       });
       box(ws, start, 1, r - 1, 1, label, { size: 10, v: 'top' });
