@@ -1,0 +1,11 @@
+# 改行は LF に統一する
+* text=auto eol=lf
+
+# バイナリ
+*.xlsx binary
+*.png binary
+
+# GitHub の差分表示・言語統計で、自動生成と同梱ライブラリを折りたたむ
+data/kanrihyo.js linguist-generated=true
+data/honbun.js linguist-generated=true
+vendor/** linguist-vendored=true

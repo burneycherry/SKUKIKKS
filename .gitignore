@@ -1,1 +1,15 @@
+# Python
 __pycache__/
+*.pyc
+
+# OS・エディタ
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Excel の作業中ファイル・試しに出力したファイル
+~$*.xlsx
+/out/
+/tmp/

@@ -1,11 +1,19 @@
 /* オフライン用キャッシュ。ファイルを更新したら VERSION を上げること */
-var VERSION = 'sekokan-v41';
+var VERSION = 'sekokan-v42';
 var FILES = [
   './',
   'index.html',
   'css/style.css',
   'js/app.js',
-  'js/export.js',
+  'js/export/core.js',
+  'js/export/sogo.js',
+  'js/export/kanri.js',
+  'js/export/honbun.js',
+  'js/export/hannyu.js',
+  'js/export/kensa.js',
+  'js/export/shiunten.js',
+  'js/export/check.js',
+  'js/export/main.js',
   'data/kanrihyo.js',
   'data/checklist.js',
   'data/satsuei.js',

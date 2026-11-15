@@ -1,5 +1,5 @@
 /* 施工計画書メーカー 画面制御
- * 依存: data/kanrihyo.js (window.KANRI_DATA), js/export.js (window.SekokanExport)
+ * 依存: data/kanrihyo.js (window.KANRI_DATA), js/export/*.js (window.SekokanExport)
  */
 (function () {
   'use strict';
