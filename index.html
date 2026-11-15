@@ -18,9 +18,36 @@
 </head>
 <body>
 <header class="app-header">
-  <h1>施工計画書メーカー</h1>
-  <p>電気設備工事｜総合・工種別の施工計画書を Excel 出力</p>
+  <div class="head-text">
+    <h1>施工計画書メーカー</h1>
+    <p>電気設備工事｜総合・工種別の施工計画書を Excel 出力</p>
+  </div>
+  <button type="button" class="help-btn" id="helpBtn" aria-expanded="false" aria-controls="help">使い方</button>
 </header>
+
+<section class="help" id="help" hidden>
+  <div class="help-inner">
+    <h2>使い方</h2>
+    <ol>
+      <li>「①工事情報」で書類の種類を選び、工事名などを入力します（入力内容はこの端末に保存されます）。</li>
+      <li>「②工事種目の選択」で該当する項目にチェックを入れます。「細目」を開くと細目単位で外せます。</li>
+      <li>「③出力内容」で出力するシートを選び、下の「Excel出力」を押します。</li>
+      <li>「ダウンロード」または「共有・ファイルに保存」で保存します。</li>
+    </ol>
+    <h3>管理内容の追加について</h3>
+    <p>管理表は国交省の管理表から該当部分を抜き出して出力します。特記事項や独自の管理内容は、本書の考え方（必要に応じて項目・細目・要点などを追加して使用する）に従い、出力した Excel に行を追加して記入してください。「標仕」を適用しない工事は、監督職員と協議のうえ調整・改変・追加してください。</p>
+    <h3>Excel で仕上げる部分</h3>
+    <ul>
+      <li>工事概要の ⑮電気設備概要・⑯機械設備概要（表の枠だけ出力）</li>
+      <li>組織表・電気保安体制の部署名・担当者など（「○○ ○○」の部分）</li>
+      <li>総合施工計画書 1.4 の変更履歴の欄</li>
+      <li>表紙の押印欄の人数・役職名の変更</li>
+      <li>全体工程表・総合仮設計画、安全衛生管理組織の破線、事故時等の連絡網の連絡線</li>
+      <li>機器搬入計画書の機器・現場ごとに変わる欄、搬入経路・揚重計画などの図</li>
+    </ul>
+    <button type="button" class="btn ghost" id="helpClose">閉じる</button>
+  </div>
+</section>
 
 <main id="main">
   <section class="card">

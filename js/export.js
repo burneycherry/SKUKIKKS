@@ -174,7 +174,8 @@
 
   /* ---------- 表紙（書籍 第Ⅲ編 2.2 総合施工計画書作成例の表紙にならう） ---------- */
 
-  function addCover(wb, info) {
+  // koshu が true のとき（工種別）は「管理技術者」の ※ と注記を付けない（作成例 p.345。K-36）
+  function addCover(wb, info, koshu) {
     var ws = portraitSheet(wb, '表紙');
     // B〜E の4列を同じ幅にして、押印欄（4人分）に使う
     ws.columns = [{ width: 3 }, { width: 19.5 }, { width: 19.5 }, { width: 19.5 }, { width: 19.5 }, { width: 3 }];
@@ -205,7 +206,7 @@
     box(ws, r, 4, r, 5, '確認', HEADOPT);
     ws.getRow(r).height = 22;
     r++;
-    ['主任監督員', '監督員', '管理技術者※', '担当者'].forEach(function (t, i) {
+    ['主任監督員', '監督員', koshu ? '管理技術者' : '管理技術者※', '担当者'].forEach(function (t, i) {
       box(ws, r, 2 + i, r, 2 + i, t, HEADOPT);
     });
     ws.getRow(r).height = 22;
@@ -223,8 +224,10 @@
     box(ws, r, 2, r, 3, '承諾は品質計画に係る部分', { size: 9, v: 'middle', h: 'center' });
     ws.getRow(r).height = 18;
     r++;
-    textLine(ws, r, LAST, '　※「管理技術者」は、工事監理業務の受託者の代表となる工事監理者', 9, false, 16, 'left');
-    r++;
+    if (!koshu) {
+      textLine(ws, r, LAST, '　※「管理技術者」は、工事監理業務の受託者の代表となる工事監理者', 9, false, 16, 'left');
+      r++;
+    }
 
     ws.getRow(r).height = 36;
     r++;
@@ -2693,7 +2696,7 @@
     wb.creator = info.juchu || 'sekokan';
     wb.created = new Date();
 
-    if (opt.cover !== false) { addCover(wb, info); }
+    if (opt.cover !== false) { addCover(wb, info, state.docType === 'koshu'); }
     if (opt.honbun === true) { addHonbun(wb, info, Number(state.koshu) || 0, honbunIsSogo(state)); }
     if (opt.gaiyo !== false) { addGaiyo(wb, info, chapters, opt.kanri !== false); }
     if (opt.soshiki !== false) { addSoshiki(wb, info); addHoan(wb); addHinshitsu(wb, info); }

@@ -598,6 +598,24 @@
 
   /* ---------- 起動 ---------- */
 
+  // 「使い方」ボタン：説明の欄を開閉する
+  function bindHelp() {
+    var btn = $('helpBtn');
+    var box = $('help');
+    function setOpen(open) {
+      box.hidden = !open;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function () {
+      setOpen(box.hidden);
+      if (!box.hidden) { box.scrollIntoView({ block: 'start' }); }
+    });
+    $('helpClose').addEventListener('click', function () {
+      setOpen(false);
+      window.scrollTo(0, 0);
+    });
+  }
+
   function init() {
     if (!DATA || !DATA.chapters) {
       showError('管理表データを読み込めませんでした。');
@@ -609,6 +627,7 @@
     refresh();
     $('exportBtn').addEventListener('click', doExport);
     $('shareBtn').addEventListener('click', doShare);
+    bindHelp();
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
       navigator.serviceWorker.register('sw.js').catch(function () { /* オフライン機能なしで継続 */ });
     }
