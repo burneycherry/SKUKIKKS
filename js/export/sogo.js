@@ -92,7 +92,7 @@
     return ws;
   }
 
-  /* ---------- 工事概要（作成例「2. 工事概要」①〜⑯にならう） ---------- */
+  /* ---------- 工事概要（作成例「2. 工事概要」の項目にならう。①〜⑯の番号は出力しない） ---------- */
 
   // 選択した工事種目(章)から、電気設備概要の表に並べる設備種目を決める
   var SETSUBI = {
@@ -108,38 +108,37 @@
     var CELLOPT = { size: 10, v: 'middle' };
 
     textLine(ws, 1, LAST, '工事概要', 16, true, 30);
-    textLine(ws, 2, LAST, '当該工事の概要を下記①～⑯に記す。', 11, false, 22, 'left');
+    textLine(ws, 2, LAST, '当該工事の概要を下記に記す。', 11, false, 22, 'left');
 
     var koki = (info.kokiFrom || info.kokiTo)
       ? ('自 ' + wareki(info.kokiFrom) + '　～　至 ' + wareki(info.kokiTo)) : '';
     var rows = [
-      ['①', '工事名称', info.kojiName],
-      ['②', '工事場所', info.basho],
-      ['③', '発注者', info.hacchu],
-      ['④', '工事監理', info.kojiKanri],
-      ['⑤', '監理', info.kanri],
-      ['⑥', '受注者', info.juchu],
-      ['⑦', '設計者', info.sekkei],
-      ['⑧', '工期', koki],
-      ['⑨', '建物用途', info.yoto],
-      ['⑩', '地域地区等', info.chiiki],
-      ['⑪', '構造', info.kozo],
-      ['⑫', '規模', info.kibo],
-      ['⑬', '消防法上の区分', info.shobo],
-      ['⑭', '施設の分類', info.bunrui]
+      ['工事名称', info.kojiName],
+      ['工事場所', info.basho],
+      ['発注者', info.hacchu],
+      ['工事監理', info.kojiKanri],
+      ['監理', info.kanri],
+      ['受注者', info.juchu],
+      ['設計者', info.sekkei],
+      ['工期', koki],
+      ['建物用途', info.yoto],
+      ['地域地区等', info.chiiki],
+      ['構造', info.kozo],
+      ['規模', info.kibo],
+      ['消防法上の区分', info.shobo],
+      ['施設の分類', info.bunrui]
     ];
     var r = 3;
     rows.forEach(function (row) {
-      box(ws, r, 1, r, 1, row[0], { size: 11, v: 'middle', h: 'center' });
-      box(ws, r, 2, r, 2, row[1], { size: 11, v: 'middle', fill: true });
-      box(ws, r, 3, r, 5, row[2] || '', { size: 11, v: 'middle' });
-      ws.getRow(r).height = Math.max(24, lineCount(row[2] || '', 62, 11) * 16 + 8);
+      box(ws, r, 1, r, 2, row[0], { size: 11, v: 'middle', fill: true });
+      box(ws, r, 3, r, 5, row[1] || '', { size: 11, v: 'middle' });
+      ws.getRow(r).height = Math.max(24, lineCount(row[1] || '', 62, 11) * 16 + 8);
       r++;
     });
 
     ws.getRow(r).height = 10;
     r++;
-    textLine(ws, r, LAST, '⑮　電気設備概要', 11, false, 22, 'left');
+    textLine(ws, r, LAST, '電気設備概要', 11, false, 22, 'left');
     r++;
     box(ws, r, 1, r, 2, '設備種目', HEADOPT);
     ['方式等', '機器名等', '形式、容量等'].forEach(function (t, i) {
@@ -163,7 +162,7 @@
 
     ws.getRow(r).height = 10;
     r++;
-    textLine(ws, r, LAST, '⑯　機械設備概要', 11, false, 22, 'left');
+    textLine(ws, r, LAST, '機械設備概要', 11, false, 22, 'left');
     r++;
     box(ws, r, 1, r, 2, '主設備', HEADOPT);
     box(ws, r, 3, r, 3, '方式等', HEADOPT);
