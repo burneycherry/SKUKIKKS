@@ -41,6 +41,8 @@ def fix_ref(chap, kubun, ref):
         return ref.replace('6-2.28.2(', '6-2.28.2(1)(', 1)
     if chap == 'kakuu' and kubun == '接地' and ref == '2-2.1.6':   # SC-13 架空配線の接地
         return '2-2.11.6'
+    if chap == 'ippan' and ref == '1-1.1.1(1)' and kubun == '施工計画書（総合施工計画書）':   # SC-33 現場仮設計画
+        return '1-2.1.1(1)'
     return ref
 
 
