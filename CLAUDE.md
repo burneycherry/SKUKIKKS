@@ -16,19 +16,22 @@
 | `index.html` | 画面（ヘッダーの「使い方」 ①工事情報 ②工事種目の選択 ③出力内容 ＋下部バー） |
 | `css/style.css` | スタイル（ライト／ダーク） |
 | `js/app.js` | 画面制御・選択状態・保存・ダウンロード／共有 |
-| `js/export/*.js` | Excel ブック生成（`window.SKUKIKKSExport`）。書類ごとに9ファイル。分担は `docs/shiyo/excel.md` |
+| `js/export/*.js` | Excel ブック生成（`window.SKUKIKKSExport`）。書類ごとに10ファイル。分担は `docs/shiyo/excel.md` |
 | `data/kanrihyo.js` | 管理表データ（自動生成。手で編集しない） |
 | `data/honbun.js` | 本文シートのデータ（`window.HONBUN_DATA`。自動生成。手で編集しない） |
 | `data/checklist.js` | 品質管理チェックシートのデータ（`window.CHECK_DATA`。工種の添字ごと。手で編集する） |
+| `data/sekocheck.js` | 施工チェックシート（公共建築協会 令和7年版）と申請手続一覧表のデータ（`window.SEKOCHECK_DATA`。自動生成。手で編集しない） |
 | `data/satsuei.js` | 工事写真の撮影箇所のデータ（`window.SATSUEI_DATA`。工種の添字ごと＋全行 `all`。手で編集する） |
 | `tools/build_data.py` | `source/*.xlsx` → `data/kanrihyo.js` 変換（要 openpyxl） |
 | `tools/build_honbun.py` | `docs/honsho` の作成例の記録 → `data/honbun.js` 変換（記録を直したら再実行） |
+| `tools/build_sekocheck.py` | `docs/sekocheck` の読み取り記録 → `data/sekocheck.js` 変換（SC 番号で決めた表記の修正は `FIX_TEXT`・`fix_ref`） |
 | `tools/test_export.js` / `compare_xlsx.py` | 出力の回帰テスト（全工種の Excel を作って変更前と比べる） |
 | `source/` | 国交省 管理表（令和8年版）原本 xlsx 9ファイル |
 | `vendor/` | ExcelJS 4.4.0（MIT。ライセンス同梱） |
 | `sw.js` / `manifest.webmanifest` / `icons/` | PWA 関連 |
 | `docs/shiyo/` | アプリの詳細仕様（書類の種類 `shorui.md`・画面 `gamen.md`・Excel 出力 `excel.md`） |
 | `docs/honsho/` | 書籍「電気設備工事の施工管理」の読み取り記録（仕様検討の参照用）。確認・保留事項は `00_kakunin.md` |
+| `docs/sekocheck/` | 書籍「電気設備工事施工チェックシート 令和7年版」の読み取り記録。確認・保留事項は `00_kakunin.md`（SC 番号） |
 | `docs/hyojunzu/` | 国交省「標準図（電気設備工事編）令和7年版」PDF の URL とページ索引（「電力28」等の番号との対応） |
 
 ## コーディング規約（必須）
@@ -45,7 +48,7 @@
 
 ## Excel 出力のファイル分担（`js/export/`）
 
-- 読み込み順は `index.html` のとおり: `core` → `sogo` → `kanri` → `honbun` → `hannyu` → `kensa` → `shiunten` → `check` → `main`
+- 読み込み順は `index.html` のとおり: `core` → `sogo` → `kanri` → `honbun` → `hannyu` → `kensa` → `shiunten` → `check` → `seko` → `main`
 - 各ファイルは `(function (X) { … })(window.SKUKIKKSExport._);` の形。先頭で `var box = X.box, …` と部品を取り出し、
   末尾で `X.名前 = 名前;` と公開する。公開 API は `main.js` で付ける
 - 2つ以上のファイルで使う部品は `core.js` に置く。シート順は `main.js` の `buildNow` で決まる
@@ -53,7 +56,8 @@
 
 ## 仕様の要点（詳細は `docs/shiyo/`）
 
-- 書類の種類は 総合 `sogo`／工種別 `koshu`／施工計画書のみ `kan`／チェックシート `check`／撮影箇所 `satsuei`
+- 書類の種類は 総合 `sogo`／工種別 `koshu`／施工計画書のみ `kan`／チェックシート `check`／撮影箇所 `satsuei`／
+  施工チェック `seko`（品質管理チェックシートとは全く別の書類）
   （`js/app.js` の `DOC_TYPES`）。切り替えると書類名と出力内容が初期値になる → `shorui.md`
 - 工種別は1工種ずつ作る。工種を選ぶと管理表の ⑵〜⑼ をその工種の項目に置き換える（`KOSHU_ITEMS`。⑴ は変えない）
 - 機器搬入計画書ほか・使用前自主検査・総合試運転・報告書の表は「③出力内容」のチェックで出す（初期値オフ）

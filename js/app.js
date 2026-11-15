@@ -10,7 +10,7 @@
   var INFO_KEYS = ['docTitle', 'kojiName', 'basho', 'kokiFrom', 'kokiTo', 'hacchu',
     'juchu', 'dairinin', 'gijutsu', 'sakuseisha', 'sakuseiBi',
     'kojiKanri', 'kanri', 'sekkei', 'yoto', 'chiiki', 'kozo', 'kibo', 'shobo', 'bunrui'];
-  var OPT_KEYS = ['cover', 'gaiyo', 'soshiki', 'tenpu', 'kanri', 'check', 'hannyu', 'jishu', 'shiunten', 'hokoku', 'satsuei', 'honbun', 'list', 'docs', 'photos', 'page'];
+  var OPT_KEYS = ['cover', 'gaiyo', 'soshiki', 'tenpu', 'kanri', 'check', 'hannyu', 'jishu', 'shiunten', 'hokoku', 'satsuei', 'honbun', 'seko', 'shinsei', 'list', 'docs', 'photos', 'page'];
   // 章内で最初の項目を選んだときに一緒に選ぶ共通項目
   var COMMON = ['共通事項', '機材の試験', '施工の立会い及び試験', '機器及び完成設備'];
 
@@ -19,27 +19,32 @@
     sogo: {
       title: '総合施工計画書',
       hint: '表紙・工事概要・組織表・添付シートを出力します。管理表は含めません（工事種目の選択は不要）。',
-      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: true, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, honbun: true }
+      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: true, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, seko: false, shinsei: false, honbun: true }
     },
     koshu: {
       title: '',
       hint: '工種ごとに作成します。表紙と、選択した工事種目の管理表（品質計画）・資料一覧・写真一覧を出力します。',
-      opt: { cover: true, gaiyo: false, soshiki: false, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, honbun: true }
+      opt: { cover: true, gaiyo: false, soshiki: false, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, seko: false, shinsei: false, honbun: true }
     },
     check: {
       title: '',
       hint: '工種ごとの品質管理チェックシート（別添1）だけを、施工計画書とは別のファイルで出力します。',
-      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: true, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, honbun: false }
+      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: true, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, seko: false, shinsei: false, honbun: false }
     },
     satsuei: {
       title: '',
       hint: '工種ごとの工事写真の撮影箇所（別添2）だけを、施工計画書とは別のファイルで出力します。',
-      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: true, honbun: false }
+      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: true, seko: false, shinsei: false, honbun: false }
+    },
+    seko: {
+      title: '電気設備工事施工チェックシート',
+      hint: '公共建築協会「電気設備工事施工チェックシート 令和7年版」を出力します。品質管理チェックシートとは別の書類です。出力する工事は「③出力内容」で選びます。',
+      opt: { cover: false, gaiyo: false, soshiki: false, tenpu: false, kanri: false, check: false, list: false, docs: false, photos: false, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, seko: true, shinsei: true, honbun: false }
     },
     kan: {
       title: '施工計画書',
       hint: '簡略的な工事向け。表紙・工事概要・組織表と管理表を1冊にまとめて出力します。',
-      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, honbun: false }
+      opt: { cover: true, gaiyo: true, soshiki: true, tenpu: false, kanri: true, check: false, list: true, docs: true, photos: true, hannyu: false, jishu: false, shiunten: false, hokoku: false, satsuei: false, seko: false, shinsei: false, honbun: false }
     }
   };
 
@@ -70,7 +75,7 @@
     11: { 2: T2.concat(['電線類', '電線保護物類', '外線材料', '地中配線', '架空配線']) }
   };
 
-  var state = { info: {}, sel: {}, opt: {}, infoOpen: true, docType: '', koshu: 0 };
+  var state = { info: {}, sel: {}, opt: {}, infoOpen: true, docType: '', koshu: 0, sekoChap: null };
   var ui = { chap: {}, item: {}, group: {} };
   var lastFile = null;   // { blob, name, url }
 
@@ -106,6 +111,7 @@
       state.sel = saved.sel || {};
       state.opt = saved.opt || {};
       state.infoOpen = saved.infoOpen !== false;
+      state.sekoChap = saved.sekoChap && typeof saved.sekoChap === 'object' ? saved.sekoChap : null;
       state.docType = DOC_TYPES[saved.docType] ? saved.docType : '';
       state.koshu = Number(saved.koshu) || 0;
       if (!(state.koshu >= 0 && state.koshu <= window.SKUKIKKSExport.KOSHU.length)) { state.koshu = 0; }
@@ -132,6 +138,13 @@
     if (state.opt.hokoku === undefined) { state.opt.hokoku = false; }
     if (state.opt.satsuei === undefined) { state.opt.satsuei = false; }
     if (state.opt.honbun === undefined) { state.opt.honbun = false; }
+    if (state.opt.seko === undefined) { state.opt.seko = false; }
+    if (state.opt.shinsei === undefined) { state.opt.shinsei = false; }
+    // 施工チェックシートの章は、未保存のときはすべて選択にする
+    if (!state.sekoChap) {
+      state.sekoChap = {};
+      sekoChapters().forEach(function (c) { state.sekoChap[c.id] = true; });
+    }
     OPT_KEYS.forEach(function (k) {
       if (state.opt[k] === undefined) { state.opt[k] = true; }
     });
@@ -370,6 +383,30 @@
 
   function koshuList() { return window.SKUKIKKSExport.KOSHU || []; }
 
+  function sekoChapters() {
+    var f = window.SKUKIKKSExport.sekoChapters;
+    return f ? f() : [];
+  }
+
+  // 施工チェックシートの章の選択欄（「③出力内容」の施工チェックシートの下）
+  function renderSekoChaps() {
+    var root = $('sekoChaps');
+    sekoChapters().forEach(function (c) {
+      var lab = el('label', 'check sub');
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!state.sekoChap[c.id];
+      cb.addEventListener('change', function () {
+        if (cb.checked) { state.sekoChap[c.id] = true; } else { delete state.sekoChap[c.id]; }
+        save();
+        hideResult();
+      });
+      lab.appendChild(cb);
+      lab.appendChild(el('span', null, c.no + '　' + c.name));
+      root.appendChild(lab);
+    });
+  }
+
   // 画面の表示を state.docType に合わせる
   function showDocType() {
     var btns = $('docType').querySelectorAll('button');
@@ -405,11 +442,15 @@
     if (withHannyu) {
       hint += '機器搬入計画書は、共通の部分だけ記入した雛形を出力します（機器名は「工種」が搬入・据付け工事のときに入ります）。ワイヤロープの選定は、Excel で条件の欄を書き換えると再計算されます。';
     }
+    if (state.opt.seko === true && state.docType !== 'seko') {
+      hint += '施工チェックシートは、「③出力内容」で選んだ工事のシートを出力します。';
+    }
     if (state.opt.jishu === true) {
       hint += '使用前自主検査の検査項目は、検査項目ごとに1シートずつ出力します。B種接地抵抗許容値は、Excel で色付きの欄を書き換えると再計算されます。';
     }
     $('docTypeHint').textContent = hint;
     $('koshuField').hidden = !byKoshu;
+    $('sekoChaps').hidden = state.opt.seko !== true;
   }
 
   // 本文の案内。章の範囲は本文データから作る（データは本文にチェックしたときに読み込み、読み込み後に案内を更新する）
@@ -514,6 +555,8 @@
       });
     });
     bindDocType();
+    renderSekoChaps();
+    $('sekoChaps').hidden = state.opt.seko !== true;
     var toggle = $('infoToggle');
     var body = $('infoBody');
     function setOpen(open) {

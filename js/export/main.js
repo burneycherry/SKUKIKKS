@@ -12,7 +12,8 @@
     honbunIsSogo = X.honbunIsSogo, loadHonbun = X.loadHonbun, addAnchor = X.addAnchor, addHannyu = X.addHannyu,
     addHannyuTaisei = X.addHannyuTaisei, addHannyuZu = X.addHannyuZu, addSuetsuke = X.addSuetsuke,
     addWire = X.addWire, addKensa = X.addKensa, addHokoku = X.addHokoku, addShiunten = X.addShiunten,
-    addChecks = X.addChecks, addSatsuei = X.addSatsuei;
+    addChecks = X.addChecks, addSatsuei = X.addSatsuei, addSeko = X.addSeko, addShinsei = X.addShinsei,
+    addDenjisoku = X.addDenjisoku;
 
   /* ---------- ブック全体 ---------- */
 
@@ -72,6 +73,8 @@
     if (opt.hokoku === true) { addHokoku(wb, info); }
     if (opt.check === true) { addChecks(wb, info, Number(state.koshu) || 0); }
     if (opt.satsuei === true) { addSatsuei(wb, info, Number(state.koshu) || 0); }
+    if (opt.seko === true) { addSeko(wb, info, state.sekoChap || null); }
+    if (opt.shinsei === true) { addShinsei(wb, info); addDenjisoku(wb, info); }
     if (!wb.worksheets.length) { return Promise.reject(new Error('出力するシートがありません。出力内容を選んでください')); }
 
     return wb.xlsx.writeBuffer().then(function (buf) {
@@ -90,4 +93,5 @@
   api.KOSHU = KOSHU;
   api.loadHonbun = loadHonbun;
   api.honbunIsSogo = honbunIsSogo;
+  api.sekoChapters = X.sekoChapters;
 })(window.SKUKIKKSExport._);

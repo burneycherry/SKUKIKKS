@@ -1,5 +1,5 @@
 /* オフライン用キャッシュ。ファイルを更新したら VERSION を上げること */
-var VERSION = 'SKUKIKKS-v43';
+var VERSION = 'SKUKIKKS-v44';
 var FILES = [
   './',
   'index.html',
@@ -13,10 +13,12 @@ var FILES = [
   'js/export/kensa.js',
   'js/export/shiunten.js',
   'js/export/check.js',
+  'js/export/seko.js',
   'js/export/main.js',
   'data/kanrihyo.js',
   'data/checklist.js',
   'data/satsuei.js',
+  'data/sekocheck.js',
   'data/honbun.js',
   'vendor/exceljs.min.js',
   'manifest.webmanifest',

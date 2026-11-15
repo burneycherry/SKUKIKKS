@@ -208,6 +208,10 @@ input[type="checkbox"] {
   accent-color: #1f5fa8;
 }
 .check { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+/* 施工チェックシートの工事の選択（「施工チェックシート」の下に字下げして並べる） */
+.seko-chaps { margin: 0 0 6px 32px; padding-left: 10px; border-left: 3px solid #d9dee6; }
+.seko-chaps[hidden] { display: none; }
+.check.sub { font-size: 16px; }
 
 /* 工事種目 (章) */
 .chap { border: 1px solid #d9dee6; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }

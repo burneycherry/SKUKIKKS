@@ -11,3 +11,9 @@
 - `- 1) 項目 〔1-1.1.1(2)〕` … 項目。〔 〕内は標準仕様書の項番号
 - 丸囲みの「検」「立」は `[検]` `[立]` と書く
 - 読み取りが曖昧な箇所は本文中に `【曖昧】` と書き、`00_kakunin.md` に管理番号（SC-nn）を付けて一覧化する
+
+## アプリへの反映
+- `python3 tools/build_sekocheck.py` で `data/sekocheck.js` を作る（記録を直したら再実行し、`sw.js` の `VERSION` を上げる）
+- 原本から表記を変えたもの（`00_kakunin.md` の SC 番号）は変換ツールの `FIX_TEXT`・`fix_ref`・`parse_shinsei` に書く
+- 「【曖昧】（…）」の注記と「（以下、空欄の行が…）」は出力しない。白紙・空白の記入用紙のページも出力しない
+- 出力の仕様は `docs/shiyo/shorui.md`・`docs/shiyo/excel.md`
