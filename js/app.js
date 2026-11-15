@@ -75,24 +75,38 @@
     11: { 2: T2.concat(['電線類', '電線保護物類', '外線材料', '地中配線', '架空配線']) }
   };
 
-  // 施工チェックシートの工事（章id）と、管理表（②工事種目の選択）の項目の対応。{ 管理表の章id: 指定 }
-  // 指定は 項目名の配列／'all'（章内のどれか）／'other'（共通項目と、同じ章でほかの工事に割り当てた項目を除くどれか）。
-  // ②でどれか1つでも選んでいればその工事を出力し、1つも無ければ出力しない（③の工事の欄は②に連動して自動で決まる）
-  var SEKO_MAP = {
-    ippan: { 1: 'all' },
-    haikan: { 2: ['電線保護物類', '金属管配線', '合成樹脂管配線（PF管、CD管、硬質ビニル管（通信・情報のみ））',
-      '合成樹脂管配線（硬質ビニル管）', '金属製可とう電線管配線'] },
-    haisen: { 2: ['電線類', 'ライティングダクト配線', '金属ダクト配線', '金属線ぴ配線', 'バスダクト配線',
-      'ケーブル配線（光ファイバケーブルを除く）', '光ファイバケーブル配線', '床上配線'] },
-    kiki: { 3: 'other', 7: 'other' },
-    setchi: { 2: ['接地'] },
-    rai: { 3: ['雷保護装置', '雷保護設備'] },
-    kakuu: { 2: ['架空配線'] },
-    chichu: { 2: ['地中配線'] },
-    juhen: { 4: 'other', 5: 'other', 6: 'other' },
-    kanshi: { 8: 'other' },
-    iryo: { 9: 'other' }
-  };
+  // ②工事種目の選択 → ③施工チェックシートの工事（章id）の判定規則。②で選んだ細目が1つでも当てはまる工事を出力する。
+  // [管理表の章id, 項目名, 細目名の配列（null＝その項目で、ほかの規則に書いていない細目）, 出力する工事id の配列, 材料]
+  // ・材料（true）は、どの工事でも使う受入検査の項目（電線類・電線保護物類）。⑵ で施工の項目を1つも選んでいないときだけ判定に使う
+  //   （例：地中配線工事で管路用の電線保護物類を選んでも、屋内の配管工事は出さない）
+  // ・項目単位で判定する。配管・配線などの項目の中にある細目「接地」（「第2編2.13による」の参照）は接地工事にしない
+  //   （数えるとほぼ全工事で接地工事が出るため）。接地工事は ⑵ の項目「接地」（受入検査・施工の2つ）を選んだときだけ出す
+  // ・分け方は施工チェックシート本体に合わせる（金属ダクト・金属線ぴの敷設は配管工事、ダクト内の配線は配線工事に載っている）
+  var SEKO_RULES = [
+    [2, '電線類', null, ['haisen'], true],
+    [2, '電線保護物類', null, ['haikan'], true],
+    [2, '接地', null, ['setchi']],
+    [2, '外線材料', ['電柱', '装柱材料', 'がいし及びがい管類'], ['kakuu']],
+    [2, '外線材料', ['地中ケーブル保護材料', 'マンホール、ハンドホール及び埋設標'], ['chichu']],
+    [2, '外線材料', null, []],
+    [2, '金属管配線', null, ['haikan']],
+    [2, '合成樹脂管配線（PF管、CD管、硬質ビニル管（通信・情報のみ））', null, ['haikan']],
+    [2, '合成樹脂管配線（硬質ビニル管）', null, ['haikan']],
+    [2, '金属製可とう電線管配線', null, ['haikan']],
+    [2, 'ライティングダクト配線', null, ['haisen']],
+    [2, '金属ダクト配線', null, ['haikan', 'haisen']],
+    [2, '金属線ぴ配線', null, ['haikan', 'haisen']],
+    [2, 'バスダクト配線', null, ['haisen']],
+    [2, 'ケーブル配線（光ファイバケーブルを除く）', null, ['haisen']],
+    [2, '光ファイバケーブル配線', null, ['haisen']],
+    [2, '床上配線', null, ['haisen']],
+    [2, '架空配線', null, ['kakuu']],
+    [2, '地中配線', null, ['chichu']],
+    [3, '雷保護装置', null, ['rai']],
+    [3, '雷保護設備', null, ['rai']]
+  ];
+  // 規則に無い項目は、管理表の章ごとにこの工事にする（共通項目 COMMON は除く。⑵ は規則に無い項目＝共通項目だけなので出さない）
+  var SEKO_CHAP = { 1: 'ippan', 3: 'kiki', 4: 'juhen', 5: 'juhen', 6: 'juhen', 7: 'kiki', 8: 'kanshi', 9: 'iryo' };
 
   var state = { info: {}, sel: {}, opt: {}, infoOpen: true, docType: '', koshu: 0, sekoChap: null };
   var ui = { chap: {}, item: {}, group: {}, seko: {} };
@@ -209,34 +223,39 @@
     });
   }
 
-  // 管理表の章 chId の項目名 name を、施工チェックシートのどれかの工事に名前で割り当てているか
-  function sekoNamed(chId, name) {
-    return Object.keys(SEKO_MAP).some(function (k) {
-      var v = SEKO_MAP[k][chId];
-      return Object.prototype.toString.call(v) === '[object Array]' && v.indexOf(name) >= 0;
-    });
+  // 管理表の細目 g（章 ch・項目 it）を選んだときに出力する施工チェックシートの工事。{ ids: 工事id の配列, mat: 材料の項目か }
+  function sekoTargets(ch, it, g) {
+    if (ch.id !== 1 && COMMON.indexOf(it.name) >= 0) { return { ids: [], mat: false }; }
+    var own = SEKO_RULES.filter(function (r) { return r[0] === ch.id && r[1] === it.name; });
+    if (!own.length) { return { ids: SEKO_CHAP[ch.id] ? [SEKO_CHAP[ch.id]] : [], mat: false }; }
+    var hit = own.filter(function (r) { return r[2] && r[2].indexOf(g.e) >= 0; });
+    if (!hit.length) { hit = own.filter(function (r) { return !r[2]; }); }
+    var out = [];
+    var mat = false;
+    hit.forEach(function (r) { out = out.concat(r[3]); if (r[4] === true) { mat = true; } });
+    return { ids: out, mat: mat };
   }
 
   // ②の選択から、施工チェックシートの工事（章）の選択を決め直す
   function syncSekoChap() {
-    if (!state.sekoChap) { state.sekoChap = {}; }
-    sekoChapters().forEach(function (c) {
-      var map = SEKO_MAP[c.id];
-      var on = false;
-      if (map) {
-        DATA.chapters.forEach(function (ch) {
-          var v = map[ch.id];
-          if (!v || on) { return; }
-          on = ch.items.some(function (it) {
-            if (itemCount(it) === 0) { return false; }
-            if (v === 'all') { return true; }
-            if (v === 'other') { return COMMON.indexOf(it.name) < 0 && !sekoNamed(ch.id, it.name); }
-            return v.indexOf(it.name) >= 0;
-          });
+    var on = {};
+    var mat = {};
+    var seko2 = false;   // ⑵ で工事が決まる施工の項目を選んでいるか
+    DATA.chapters.forEach(function (ch) {
+      ch.items.forEach(function (it) {
+        it.groups.forEach(function (g) {
+          if (!state.sel[g.id]) { return; }
+          var t = sekoTargets(ch, it, g);
+          t.ids.forEach(function (id) { if (t.mat) { mat[id] = true; } else { on[id] = true; } });
+          if (ch.id === 2 && !t.mat && t.ids.length) { seko2 = true; }
         });
-      }
-      state.sekoChap[c.id] = on;
-      if (ui.seko[c.id]) { ui.seko[c.id].checked = on; }
+      });
+    });
+    if (!seko2) { Object.keys(mat).forEach(function (id) { on[id] = true; }); }
+    state.sekoChap = {};
+    sekoChapters().forEach(function (c) {
+      state.sekoChap[c.id] = !!on[c.id];
+      if (ui.seko[c.id]) { ui.seko[c.id].checked = !!on[c.id]; }
     });
   }
 
