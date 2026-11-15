@@ -1,5 +1,5 @@
 /* 施工計画書 Excel(xlsx) 出力：使用前自主検査の検査項目・工程表・管理台帳
- * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SekokanExport._ で共有する
+ * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SKUKIKKSExport._ で共有する
  */
 (function (X) {
   'use strict';
@@ -595,4 +595,4 @@
   X.addKensaKotei = addKensaKotei;
   X.addKensaDaicho = addKensaDaicho;
   X.addKensa = addKensa;
-})(window.SekokanExport._);
+})(window.SKUKIKKSExport._);

@@ -1,5 +1,5 @@
 /* 施工計画書 Excel(xlsx) 出力：管理表（章ごと）・対象工事種目・作成提出資料一覧・写真撮影項目一覧
- * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SekokanExport._ で共有する
+ * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SKUKIKKSExport._ で共有する
  */
 (function (X) {
   'use strict';
@@ -194,4 +194,4 @@
   X.addChapter = addChapter;
   X.pad = pad;
   X.mergeLabels = mergeLabels;
-})(window.SekokanExport._);
+})(window.SKUKIKKSExport._);

@@ -20,7 +20,7 @@ import sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 DOCS = os.path.join(ROOT, 'docs', 'honsho')
 
-# 作成例の番号 → SekokanExport.KOSHU の添字（(16) 総合試運転報告書は工種別施工計画書一覧に無い）
+# 作成例の番号 → SKUKIKKSExport.KOSHU の添字（(16) 総合試運転報告書は工種別施工計画書一覧に無い）
 KOSHU = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7, 9: 8, 10: 9, 11: 10, 12: 11, 13: 12, 14: 13, 15: 14, 17: 15}
 
 DROP = re.compile(r'未照合|読み取り|原本|記録しない|`|利用者|と見られる|PDF p\.|アプリ|K-\d|は記録|だけ記録|出典|写真では|'
@@ -355,7 +355,7 @@ def main():
     out = os.path.join(ROOT, 'data', 'honbun.js')
     head = ('/* 本文シートのデータ（自動生成。手で編集しない）\n'
             ' * python3 tools/build_honbun.py で docs/honsho の作成例の記録から作る。\n'
-            ' * koshu: SekokanExport.KOSHU の添字ごとの章、sogo: 総合施工計画書の章。\n'
+            ' * koshu: SKUKIKKSExport.KOSHU の添字ごとの章、sogo: 総合施工計画書の章。\n'
             ' * 章 = { no, title, lines }。行 = { t: p(文) / cap(表題) / fig(図の置き場所) / tb(表), lv: 字下げ, text または rows }\n'
             ' */\n')
     with open(out, 'w', encoding='utf-8') as fp:

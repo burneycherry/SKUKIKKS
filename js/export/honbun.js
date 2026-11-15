@@ -1,5 +1,5 @@
 /* 施工計画書 Excel(xlsx) 出力：本文シート（data/honbun.js は本文を出力するときだけ読み込む）
- * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SekokanExport._ で共有する
+ * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SKUKIKKSExport._ で共有する
  */
 (function (X) {
   'use strict';
@@ -109,4 +109,4 @@
   X.honbunLoading = honbunLoading;
   X.loadHonbun = loadHonbun;
   X.honbunIsSogo = honbunIsSogo;
-})(window.SekokanExport._);
+})(window.SKUKIKKSExport._);

@@ -1,5 +1,5 @@
 /* 施工計画書 Excel(xlsx) 出力：総合試運転のフローとチェックリスト・総合試運転報告書の表
- * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SekokanExport._ で共有する
+ * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SKUKIKKSExport._ で共有する
  */
 (function (X) {
   'use strict';
@@ -383,4 +383,4 @@
   X.HOKOKU = HOKOKU;
   X.addHokokuSheet = addHokokuSheet;
   X.addHokoku = addHokoku;
-})(window.SekokanExport._);
+})(window.SKUKIKKSExport._);

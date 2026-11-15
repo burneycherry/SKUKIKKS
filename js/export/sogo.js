@@ -1,5 +1,5 @@
 /* 施工計画書 Excel(xlsx) 出力：表紙・工事概要・組織表・電気保安体制・品質管理体制・総合施工計画書の添付シート
- * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SekokanExport._ で共有する
+ * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SKUKIKKSExport._ で共有する
  */
 (function (X) {
   'use strict';
@@ -530,4 +530,4 @@
   X.monthList = monthList;
   X.addAnzenKeikaku = addAnzenKeikaku;
   X.addRenraku = addRenraku;
-})(window.SekokanExport._);
+})(window.SKUKIKKSExport._);

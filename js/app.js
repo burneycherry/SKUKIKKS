@@ -1,11 +1,12 @@
 /* 施工計画書メーカー 画面制御
- * 依存: data/kanrihyo.js (window.KANRI_DATA), js/export/*.js (window.SekokanExport)
+ * 依存: data/kanrihyo.js (window.KANRI_DATA), js/export/*.js (window.SKUKIKKSExport)
  */
 (function () {
   'use strict';
 
   var DATA = window.KANRI_DATA;
-  var STORE_KEY = 'sekokan.v1';
+  var STORE_KEY = 'SKUKIKKS.v1';
+  var OLD_STORE_KEY = 'sekokan.v1';
   var INFO_KEYS = ['docTitle', 'kojiName', 'basho', 'kokiFrom', 'kokiTo', 'hacchu',
     'juchu', 'dairinin', 'gijutsu', 'sakuseisha', 'sakuseiBi',
     'kojiKanri', 'kanri', 'sekkei', 'yoto', 'chiiki', 'kozo', 'kibo', 'shobo', 'bunrui'];
@@ -42,7 +43,7 @@
     }
   };
 
-  // 工種（SekokanExport.KOSHU の添字）ごとに、管理表で初期選択する項目。{ 章id: [項目名, ...] }
+  // 工種（SKUKIKKSExport.KOSHU の添字）ごとに、管理表で初期選択する項目。{ 章id: [項目名, ...] }
   // 工種別を選んだとき・工種を切り替えたときに、⑵〜⑼ の選択をこの内容に置き換える（⑴ 一般共通事項は変えない）。
   // 登録の無い工種（検査・試運転の計画書、その他）は選択を変えない
   var T2 = ['機材の試験', '共通事項', '施工の立会い及び試験'];
@@ -94,6 +95,10 @@
     var saved = null;
     try {
       var raw = window.localStorage.getItem(STORE_KEY);
+      if (!raw) {
+        // 旧名称（sekokan）時代の保存データを引き継ぐ
+        raw = window.localStorage.getItem(OLD_STORE_KEY);
+      }
       if (raw) { saved = JSON.parse(raw); }
     } catch (e) { saved = null; }
     if (saved && typeof saved === 'object') {
@@ -103,7 +108,7 @@
       state.infoOpen = saved.infoOpen !== false;
       state.docType = DOC_TYPES[saved.docType] ? saved.docType : '';
       state.koshu = Number(saved.koshu) || 0;
-      if (!(state.koshu >= 0 && state.koshu <= window.SekokanExport.KOSHU.length)) { state.koshu = 0; }
+      if (!(state.koshu >= 0 && state.koshu <= window.SKUKIKKSExport.KOSHU.length)) { state.koshu = 0; }
     } else {
       // 初回: ⑴一般共通事項はどの工事にも該当するため選択済みにする
       DATA.chapters[0].items.forEach(function (it) {
@@ -363,7 +368,7 @@
 
   /* ---------- 書類の種類 ---------- */
 
-  function koshuList() { return window.SekokanExport.KOSHU || []; }
+  function koshuList() { return window.SKUKIKKSExport.KOSHU || []; }
 
   // 画面の表示を state.docType に合わせる
   function showDocType() {
@@ -409,7 +414,7 @@
 
   // 本文の案内。章の範囲は本文データから作る（データは本文にチェックしたときに読み込み、読み込み後に案内を更新する）
   function honbunHint() {
-    var ex = window.SekokanExport;
+    var ex = window.SKUKIKKSExport;
     var d = window.HONBUN_DATA;
     if (!d) {
       ex.loadHonbun().then(function () { showDocType(); }, function () {});
@@ -564,7 +569,7 @@
     hideResult();
     btn.disabled = true;
     btn.textContent = '作成中…';
-    window.SekokanExport.build(DATA, state).then(function (blob) {
+    window.SKUKIKKSExport.build(DATA, state).then(function (blob) {
       var name = fileName();
       var url = URL.createObjectURL(blob);
       lastFile = { blob: blob, name: name, url: url };

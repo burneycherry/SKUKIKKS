@@ -1,4 +1,4 @@
-# CLAUDE.md — sekokan（施工計画書メーカー）
+# CLAUDE.md — SKUKIKKS（施工計画書メーカー）
 
 総合施工計画書・工種別施工計画書・施工計画書（簡略）を Excel(xlsx) 出力する静的 Web アプリ（PWA）。
 工事種目をチェックすると、国交省の管理表から該当部分を抜粋して品質計画として付ける。
@@ -7,7 +7,7 @@
 ## 対象環境
 
 - 主対象: iOS Safari / ホーム画面に追加した PWA。Android Chrome・PC も動作可とする
-- サーバー処理なし。入力値は localStorage（キー `sekokan.v1`）のみに保存
+- サーバー処理なし。入力値は localStorage（キー `SKUKIKKS.v1`。旧キー `sekokan.v1` があれば読み込んで引き継ぐ）のみに保存
 
 ## ファイル構成
 
@@ -16,7 +16,7 @@
 | `index.html` | 画面（ヘッダーの「使い方」 ①工事情報 ②工事種目の選択 ③出力内容 ＋下部バー） |
 | `css/style.css` | スタイル（ライト／ダーク） |
 | `js/app.js` | 画面制御・選択状態・保存・ダウンロード／共有 |
-| `js/export/*.js` | Excel ブック生成（`window.SekokanExport`）。書類ごとに9ファイル。分担は `docs/shiyo/excel.md` |
+| `js/export/*.js` | Excel ブック生成（`window.SKUKIKKSExport`）。書類ごとに9ファイル。分担は `docs/shiyo/excel.md` |
 | `data/kanrihyo.js` | 管理表データ（自動生成。手で編集しない） |
 | `data/honbun.js` | 本文シートのデータ（`window.HONBUN_DATA`。自動生成。手で編集しない） |
 | `data/checklist.js` | 品質管理チェックシートのデータ（`window.CHECK_DATA`。工種の添字ごと。手で編集する） |
@@ -46,7 +46,7 @@
 ## Excel 出力のファイル分担（`js/export/`）
 
 - 読み込み順は `index.html` のとおり: `core` → `sogo` → `kanri` → `honbun` → `hannyu` → `kensa` → `shiunten` → `check` → `main`
-- 各ファイルは `(function (X) { … })(window.SekokanExport._);` の形。先頭で `var box = X.box, …` と部品を取り出し、
+- 各ファイルは `(function (X) { … })(window.SKUKIKKSExport._);` の形。先頭で `var box = X.box, …` と部品を取り出し、
   末尾で `X.名前 = 名前;` と公開する。公開 API は `main.js` で付ける
 - 2つ以上のファイルで使う部品は `core.js` に置く。シート順は `main.js` の `buildNow` で決まる
 - ファイルを足したら `index.html` の `<script>`（`main.js` より前）と `sw.js` の `FILES` にも足す
@@ -64,7 +64,7 @@
 - 図や表は1つずつ独立したシートにする。全体工程表・総合仮設計画などは表題だけ出し、利用者が Excel で仕上げる
 - 管理表は原本と同じ列構成（A区分〜N掲載ページ）。A4横・横幅1ページ。フォントは「ＭＳ Ｐゴシック」
 - 行の高さは文字数から見積もって明示設定（iOS の Numbers 等でも崩れにくくするため）
-- 日付は令和表記（`SekokanExport.wareki`）。出力ファイル名は `書類名_工事名_作成日(yyyymmdd).xlsx`
+- 日付は令和表記（`SKUKIKKSExport.wareki`）。出力ファイル名は `書類名_工事名_作成日(yyyymmdd).xlsx`
 - iOS のホーム画面アプリでは download が効かないことがあるため `navigator.share` を併設（生成と共有は別タップ）
 
 ## 管理表を差し替えるとき

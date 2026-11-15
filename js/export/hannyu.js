@@ -1,5 +1,5 @@
 /* 施工計画書 Excel(xlsx) 出力：機器搬入計画書・搬入時の体制表・ワイヤロープの選定・据付け施工要領・アンカーの施工要領
- * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SekokanExport._ で共有する
+ * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SKUKIKKSExport._ で共有する
  */
 (function (X) {
   'use strict';
@@ -577,4 +577,4 @@
   X.PV_ALPHA = PV_ALPHA;
   X.addSuetsukePv = addSuetsukePv;
   X.addAnchor = addAnchor;
-})(window.SekokanExport._);
+})(window.SKUKIKKSExport._);

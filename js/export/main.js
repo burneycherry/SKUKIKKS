@@ -1,5 +1,5 @@
-/* 施工計画書 Excel(xlsx) 出力：ブック全体の組み立てと公開 API（window.SekokanExport）
- * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SekokanExport._ で共有する
+/* 施工計画書 Excel(xlsx) 出力：ブック全体の組み立てと公開 API（window.SKUKIKKSExport）
+ * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SKUKIKKSExport._ で共有する
  */
 (function (X) {
   'use strict';
@@ -33,7 +33,7 @@
     }
 
     var wb = new ExcelJS.Workbook();
-    wb.creator = info.juchu || 'sekokan';
+    wb.creator = info.juchu || 'SKUKIKKS';
     wb.created = new Date();
 
     if (opt.cover !== false) { addCover(wb, info, state.docType === 'koshu'); }
@@ -82,7 +82,7 @@
   }
 
   // 公開 API（js/app.js から使う）。部品の入れ物 _ はそのまま残す
-  var api = window.SekokanExport;
+  var api = window.SKUKIKKSExport;
   api.build = build;
   api.collect = collect;
   api.parseDocs = parseDocs;
@@ -90,4 +90,4 @@
   api.KOSHU = KOSHU;
   api.loadHonbun = loadHonbun;
   api.honbunIsSogo = honbunIsSogo;
-})(window.SekokanExport._);
+})(window.SKUKIKKSExport._);

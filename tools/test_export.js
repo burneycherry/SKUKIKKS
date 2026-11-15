@@ -24,12 +24,12 @@ const fs = require('fs');
     cases.push(['kan_nopage', { docType: 'kan', koshu: 3, info: {}, sel: all, opt: Object.assign({}, on, { page: false, honbun: false }) }]);
     const r = {};
     for (const [n, st] of cases) {
-      const blob = await SekokanExport.build(KANRI_DATA, st);
+      const blob = await SKUKIKKSExport.build(KANRI_DATA, st);
       const buf = new Uint8Array(await blob.arrayBuffer());
       let s = ''; for (let i = 0; i < buf.length; i += 8192) s += String.fromCharCode.apply(null, buf.subarray(i, i + 8192));
       r[n] = btoa(s);
     }
-    r._api = Object.keys(SekokanExport).sort().join(',') + '|' + SekokanExport.KOSHU.length + '|' + SekokanExport.wareki('2026-11-15');
+    r._api = Object.keys(SKUKIKKSExport).sort().join(',') + '|' + SKUKIKKSExport.KOSHU.length + '|' + SKUKIKKSExport.wareki('2026-11-15');
     return r;
   });
   for (const n in res) { if (n === '_api') { fs.writeFileSync(out + '/_api.txt', res[n]); continue; } fs.writeFileSync(out + '/' + n + '.xlsx', Buffer.from(res[n], 'base64')); }

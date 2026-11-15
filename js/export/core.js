@@ -1,7 +1,7 @@
 /* 施工計画書 Excel(xlsx) 出力：共通の部品（文字列・書式・シートの作成・罫線・一覧表、選択内容の収集、和暦、工種の一覧 KOSHU）
- * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SekokanExport._ で共有する
+ * 分割したファイルは index.html の順（core → … → main）に読み込む。部品は window.SKUKIKKSExport._ で共有する
  */
-window.SekokanExport = { _: {} };
+window.SKUKIKKSExport = { _: {} };
 
 (function (X) {
   'use strict';
@@ -302,4 +302,4 @@ window.SekokanExport = { _: {} };
   X.KOSHU = KOSHU;
   X.sheetName = sheetName;
   X.addTable = addTable;
-})(window.SekokanExport._);
+})(window.SKUKIKKSExport._);

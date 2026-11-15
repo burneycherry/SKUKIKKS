@@ -4,7 +4,7 @@
 
 ## ファイルの分担（`js/export/`）
 
-`index.html` の順に読み込む。部品は `window.SekokanExport._` で共有し、各ファイルの先頭で `var box = X.box, …` と取り出す。
+`index.html` の順に読み込む。部品は `window.SKUKIKKSExport._` で共有し、各ファイルの先頭で `var box = X.box, …` と取り出す。
 公開 API（`build` `collect` `parseDocs` `wareki` `KOSHU` `loadHonbun` `honbunIsSogo`）は `main.js` で付ける。
 
 | ファイル | 作るシート・中身 |
