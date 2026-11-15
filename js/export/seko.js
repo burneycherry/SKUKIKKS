@@ -8,7 +8,14 @@
   var FONT = X.FONT, box = X.box, lineCount = X.lineCount, portraitSheet = X.portraitSheet, sheetName = X.sheetName,
     textLine = X.textLine, pageSetup = X.pageSetup, wareki = X.wareki;
 
+  // チェックシート本体の列幅（区分・チェックポイント・項番号・記録）と行の高さの見積もりに使う値
+  var WA = 13, WB = 44, WC = 16, WD = 30;
+  var LH_T = 13.5;       // チェックポイント（10pt）1行の高さ(pt)
+  var LH_R = 12.5;       // 項番号（9pt）1行の高さ(pt)
+  var PAD = 8;           // 行の上下の余白(pt)
+  var MIN_H = 26;        // 1行の最小の高さ(pt)。短い項目でも記録欄に書ける高さを残す
   var ROW_MAX = 400;     // 1行の高さの上限(pt)。Excel の行の高さは 409pt までのため、これを超える項目だけ続きの行に分ける
+  var CIRC = /^　[\u2460-\u2473\u3251-\u3255]/;   // 丸数字（①〜㉕）で始まる小項目の行
   var MERGE_MAX = 420;   // 申請手続一覧表の工事区分の縦結合を区切る高さ(pt)
   var NO = { ippan: '1', haikan: '2-1', haisen: '2-2', kiki: '2-3', setchi: '2-4', rai: '2-5', kakuu: '2-6',
     chichu: '2-7', juhen: '3', kanshi: '4', iryo: '5' };
@@ -80,56 +87,59 @@
 
   /* ---------- チェックシート本体（章・段階ごとに1シート） ---------- */
 
-  // 項番号を表示用の行にする（1行に1つ。途中で折り返さないため）。小項目（①…）付きは番号の最初の行にだけ記号を付ける
-  function refLines(refs) {
+  // 項番号を表示用の行にする（1行に1つ。途中で折り返さないため）。refs は [[行の番号, 項番号], …]、
+  // lines は項目の本文を改行で分けたもの。行の番号が lo〜hi のもの（first のときは見出し行 0 も）を出す。
+  // 小項目の番号には、その小項目の丸数字（丸数字の無い小項目は先頭の語「電力設備：」など）を最初の行にだけ付ける
+  function refLines(lines, refs, lo, hi, first) {
     var out = [];
-    var last = '';
-    refs.forEach(function (r) {
-      var m = /^([\u2460-\u2473\u3251-\u3255])(.+)$/.exec(r);
-      if (m) {
-        out.push((m[1] === last ? '　 ' : m[1] + ' ') + m[2]);
-        last = m[1];
-      } else {
-        out.push(r);
-        last = '';
+    var last = -1;
+    refs.forEach(function (p) {
+      var idx = p[0];
+      var ok = idx === 0 ? first : (idx >= lo && idx <= hi);
+      if (!ok) { return; }
+      var head = '';
+      if (idx > 0) {
+        var ln = lines[idx] || '';
+        if (CIRC.test(ln)) {
+          head = idx === last ? '　 ' : ln.charAt(1) + ' ';
+        } else {
+          head = idx === last ? '　 ' : ln.replace(/^　/, '').replace(/[（(].*$/, '').substring(0, 10) + '：';
+        }
       }
+      out.push(head + p[1]);
+      last = idx;
     });
     return out;
   }
 
-  // 行の高さ(pt)の見積もり（チェックポイント・項番号の列のうち高い方）
+  // 行の高さ(pt)の見積もり（チェックポイント・項番号の列のうち高い方）。分けるかどうかの判定と、実際の行の高さの両方に使う
   function rowHeight(t, refs) {
-    return Math.ceil(Math.max(lineCount(t, 44, 10) * 13.5, lineCount(refs.join('\n'), 16, 9) * 12.5) + 8);
+    return Math.ceil(Math.max(lineCount(t, WB, 10) * LH_T, lineCount(refs.join('\n'), WC, 9) * LH_R) + PAD);
   }
 
-  // 1項目を1行にする。Excel の行の高さの上限を超える項目（配管工事の「配管図」など）だけ、小項目の区切りで
-  // 続きの行（「（続き）」）に分ける。戻り値 [{t, ref:[...]}]
+  // 1項目を1行にする。Excel の行の高さの上限を超える項目（配管工事の「配管図」）だけ、小項目の区切りで
+  // 続きの行（「（続き）」）に分ける。戻り値 [{t, ref:[表示用の項番号…], h:高さ(pt)}]
   function splitItem(it) {
-    var all = refLines(it.ref);
-    if (rowHeight(it.t, all) <= ROW_MAX) { return [{ t: it.t, ref: all }]; }
     var lines = it.t.split('\n');
-    var head = lines[0];
-    var rows = [];
-    var part = [];
-    function refsFor(subs, first) {
-      var marks = subs.map(function (x) { return x.charAt(1); });
-      return refLines(it.ref.filter(function (r) {
-        var m = r.charAt(0);
-        return marks.indexOf(m) >= 0 || (first && !/[\u2460-\u2473\u3251-\u3255]/.test(m));
-      }));
+    var n = lines.length - 1;
+    function part(lo, hi, first) {
+      var t = (first ? lines[0] : lines[0] + '（続き）') + (hi >= lo ? '\n' + lines.slice(lo, hi + 1).join('\n') : '');
+      var ref = refLines(lines, it.ref, lo, hi, first);
+      return { t: t, ref: ref, h: rowHeight(t, ref) };
     }
-    function text(subs, first) { return (first ? head : head + '（続き）') + '\n' + subs.join('\n'); }
-    lines.slice(1).forEach(function (ln) {
-      var first = rows.length === 0;
-      var next = part.concat([ln]);
-      if (part.length && rowHeight(text(next, first), refsFor(next, first)) > ROW_MAX) {
-        rows.push({ t: text(part, first), ref: refsFor(part, first) });
-        part = [ln];
-      } else {
-        part = next;
+    var whole = part(1, n, true);
+    if (whole.h <= ROW_MAX) { return [whole]; }
+    var rows = [];
+    var lo = 1;
+    var hi;
+    for (hi = 1; hi <= n; hi++) {
+      // 次の小項目まで入れると上限を超えるときは、ここまでで1行にする（小項目1つで超えるときはそのまま入れる）
+      if (hi > lo && part(lo, hi, rows.length === 0).h > ROW_MAX) {
+        rows.push(part(lo, hi - 1, rows.length === 0));
+        lo = hi;
       }
-    });
-    if (part.length) { rows.push({ t: text(part, rows.length === 0), ref: refsFor(part, rows.length === 0) }); }
+    }
+    rows.push(part(lo, n, rows.length === 0));
     return rows;
   }
 
@@ -141,7 +151,6 @@
       views: [{ state: 'frozen', ySplit: 3 }],
       headerFooter: { oddFooter: '&C&P / &N' }
     });
-    var WA = 13, WB = 44, WC = 16, WD = 30;
     ws.columns = [{ width: WA }, { width: WB }, { width: WC }, { width: WD }];
     textLine(ws, 1, 4, ch.title + stage, 12, true, 24, 'left');
     textLine(ws, 2, 4, '工事名　' + (info.kojiName || ''), 9, false, 18, 'left');
@@ -155,16 +164,17 @@
       var label = (k.mark ? '(' + k.mark + ')\n' : '') + k.name;
       var rows = [];
       k.items.forEach(function (it) { rows = rows.concat(splitItem(it)); });
+      var hs = rows.map(function (row) { return Math.min(409, Math.max(MIN_H, row.h)); });
+      // 区分名は縦結合したセルに入るため、各行ではなく区分全体の高さで足りるかを見る。足りないときは最後の行を広げる
+      var need = Math.ceil(lineCount(label, WA, 10) * LH_T + PAD);
+      var sum = hs.reduce(function (a, b) { return a + b; }, 0);
+      if (sum < need) { hs[hs.length - 1] = Math.min(409, hs[hs.length - 1] + need - sum); }
       var start = r;
-      rows.forEach(function (row) {
-        var refText = row.ref.join('\n');
-        var n = Math.max(lineCount(row.t, WB, 10) * 13.5, lineCount(refText, WC, 9) * 12.5,
-          lineCount(label, WA, 10) * 13.5);
-        var h = Math.min(409, Math.max(26, Math.ceil(n + 8)));
+      rows.forEach(function (row, i) {
         box(ws, r, 2, r, 2, row.t, { size: 10, v: 'top' });
-        box(ws, r, 3, r, 3, refText, { size: 9, v: 'top' });
+        box(ws, r, 3, r, 3, row.ref.join('\n'), { size: 9, v: 'top' });
         box(ws, r, 4, r, 4, '', { size: 10, v: 'top' });
-        ws.getRow(r).height = h;
+        ws.getRow(r).height = hs[i];
         r++;
       });
       box(ws, start, 1, r - 1, 1, label, { size: 10, v: 'top' });

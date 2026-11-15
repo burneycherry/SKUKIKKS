@@ -44,8 +44,6 @@ def fix_ref(chap, kubun, ref):
     return ref
 
 
-CIRCLED = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕'
-
 
 def split_refs(text):
     """本文から 〔項番号〕 と直後の「他」を取り出す。戻り値 (本文, [項番号...])"""
@@ -68,7 +66,7 @@ def clean(text):
 
 
 def parse_chapter(cid, fname):
-    sheets = []          # [{stage, kubun:[{name, mark, items:[{t, ref}]}]}]
+    sheets = []          # [{stage, kubun:[{name, mark, items:[{t, ref:[[行の番号, 項番号]]}]}]}]
     cur_sheet = None
     cur_kubun = None
     cur_item = None
@@ -109,9 +107,10 @@ def parse_chapter(cid, fname):
             num = re.match(r'^(\d+\))', body)
             if body.endswith('（続き）') and cur_item is not None and num and \
                     cur_item['t'].startswith(num.group(1)):
-                cur_item['ref'] += refs
+                cur_item['ref'] += [[0, r] for r in refs]     # 続きのページの見出し行の番号は項目の見出し行に付ける
                 continue
-            cur_item = {'t': body, 'ref': refs}
+            # ref は [行の番号, 項番号]。行の番号は t を改行で分けたときの位置（0 = 項目の見出し行）
+            cur_item = {'t': body, 'ref': [[0, r] for r in refs]}
             cur_kubun['items'].append(cur_item)
             continue
         m = re.match(r'^  - (.+)$', ln)
@@ -119,9 +118,9 @@ def parse_chapter(cid, fname):
             text = clean(m.group(1))
             body, refs = split_refs(text)
             refs = [fix_ref(cid, cur_kubun['name'], r) for r in refs]
-            mark = body[0] if body and body[0] in CIRCLED else ''
             cur_item['t'] += '\n　' + body
-            cur_item['ref'] += [(mark + r) if mark else r for r in refs]
+            idx = cur_item['t'].count('\n')
+            cur_item['ref'] += [[idx, r] for r in refs]
     return sheets
 
 
