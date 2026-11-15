@@ -15,17 +15,17 @@ OUT = os.path.join(ROOT, 'data', 'sekocheck.js')
 
 # 章: (id, 記録ファイル, 見出し, 画面・シート名に使う短い名前)
 CHAPTERS = [
-    ('ippan', 'c1_ippan.md', '1. 一般共通事項', '一般共通事項'),
-    ('haikan', 'c2_1_haikan.md', '2. 電力設備、通信・情報設備工事　1) 配管工事', '配管工事'),
-    ('haisen', 'c2_2_haisen.md', '2. 電力設備、通信・情報設備工事　2) 配線工事', '配線工事'),
-    ('kiki', 'c2_3_kiki.md', '2. 電力設備、通信・情報設備工事　3) 機器取付け工事', '機器取付け工事'),
-    ('setchi', 'c2_4_setchi.md', '2. 電力設備、通信・情報設備工事　4) 接地工事', '接地工事'),
-    ('rai', 'c2_5_rai.md', '2. 電力設備、通信・情報設備工事　5) 雷保護設備工事', '雷保護設備工事'),
-    ('kakuu', 'c2_6_kakuu.md', '2. 電力設備、通信・情報設備工事　6) 架空配線工事', '架空配線工事'),
-    ('chichu', 'c2_7_chichu.md', '2. 電力設備、通信・情報設備工事　7) 地中配線工事', '地中配線工事'),
-    ('juhen', 'c3_juhen.md', '3. 受変電設備・電力貯蔵設備・発電設備工事', '受変電・電力貯蔵・発電設備工事'),
-    ('kanshi', 'c4_kanshi.md', '4. 中央監視制御設備工事', '中央監視制御設備工事'),
-    ('iryo', 'c5_iryo.md', '5. 医療関係設備工事', '医療関係設備工事'),
+    ('ippan', 'p001_ippan.md', '1. 一般共通事項', '一般共通事項'),
+    ('haikan', 'p010_haikan.md', '2. 電力設備、通信・情報設備工事　1) 配管工事', '配管工事'),
+    ('haisen', 'p026_haisen.md', '2. 電力設備、通信・情報設備工事　2) 配線工事', '配線工事'),
+    ('kiki', 'p036_kiki.md', '2. 電力設備、通信・情報設備工事　3) 機器取付け工事', '機器取付け工事'),
+    ('setchi', 'p050_setchi.md', '2. 電力設備、通信・情報設備工事　4) 接地工事', '接地工事'),
+    ('rai', 'p058_rai.md', '2. 電力設備、通信・情報設備工事　5) 雷保護設備工事', '雷保護設備工事'),
+    ('kakuu', 'p062_kakuu.md', '2. 電力設備、通信・情報設備工事　6) 架空配線工事', '架空配線工事'),
+    ('chichu', 'p068_chichu.md', '2. 電力設備、通信・情報設備工事　7) 地中配線工事', '地中配線工事'),
+    ('juhen', 'p076_juhen.md', '3. 受変電設備・電力貯蔵設備・発電設備工事', '受変電・電力貯蔵・発電設備工事'),
+    ('kanshi', 'p090_kanshi.md', '4. 中央監視制御設備工事', '中央監視制御設備工事'),
+    ('iryo', 'p098_iryo.md', '5. 医療関係設備工事', '医療関係設備工事'),
 ]
 
 # 本文の置換（SC-10）
@@ -41,6 +41,8 @@ def fix_ref(chap, kubun, ref):
         return ref.replace('6-2.28.2(', '6-2.28.2(1)(', 1)
     if chap == 'kakuu' and kubun == '接地' and ref == '2-2.1.6':   # SC-13 架空配線の接地
         return '2-2.11.6'
+    if chap == 'ippan' and ref == '1-1.1.1(1)' and kubun == '施工計画書（総合施工計画書）':   # SC-33 現場仮設計画
+        return '1-2.1.1(1)'
     return ref
 
 
@@ -146,7 +148,7 @@ def md_rows(text, ncols):
 
 
 def parse_shinsei():
-    with open(os.path.join(SRC, 's1_shinsei.md'), encoding='utf-8') as f:
+    with open(os.path.join(SRC, 'p110_shinsei.md'), encoding='utf-8') as f:
         s = f.read()
     main, beppyo = s.split('## p.114', 1)
     rows = [r for r in md_rows(main, 8) if r[0] != '大区分']

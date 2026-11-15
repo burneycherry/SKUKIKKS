@@ -75,8 +75,41 @@
     11: { 2: T2.concat(['電線類', '電線保護物類', '外線材料', '地中配線', '架空配線']) }
   };
 
+  // ②工事種目の選択 → ③施工チェックシートの工事（章id）の判定規則。②で選んだ細目が1つでも当てはまる工事を出力する。
+  // [管理表の章id, 項目名, 細目名の配列（null＝その項目で、ほかの規則に書いていない細目）, 出力する工事id の配列, 材料]
+  // ・材料（true）は、どの工事でも使う受入検査の項目（電線類・電線保護物類）。⑵ で施工の項目を1つも選んでいないときだけ判定に使う
+  //   （例：地中配線工事で管路用の電線保護物類を選んでも、屋内の配管工事は出さない）
+  // ・項目単位で判定する。配管・配線などの項目の中にある細目「接地」（「第2編2.13による」の参照）は接地工事にしない
+  //   （数えるとほぼ全工事で接地工事が出るため）。接地工事は ⑵ の項目「接地」（受入検査・施工の2つ）を選んだときだけ出す
+  // ・分け方は施工チェックシート本体に合わせる（金属ダクト・金属線ぴの敷設は配管工事、ダクト内の配線は配線工事に載っている）
+  var SEKO_RULES = [
+    [2, '電線類', null, ['haisen'], true],
+    [2, '電線保護物類', null, ['haikan'], true],
+    [2, '接地', null, ['setchi']],
+    [2, '外線材料', ['電柱', '装柱材料', 'がいし及びがい管類'], ['kakuu']],
+    [2, '外線材料', ['地中ケーブル保護材料', 'マンホール、ハンドホール及び埋設標'], ['chichu']],
+    [2, '外線材料', null, []],
+    [2, '金属管配線', null, ['haikan']],
+    [2, '合成樹脂管配線（PF管、CD管、硬質ビニル管（通信・情報のみ））', null, ['haikan']],
+    [2, '合成樹脂管配線（硬質ビニル管）', null, ['haikan']],
+    [2, '金属製可とう電線管配線', null, ['haikan']],
+    [2, 'ライティングダクト配線', null, ['haisen']],
+    [2, '金属ダクト配線', null, ['haikan', 'haisen']],
+    [2, '金属線ぴ配線', null, ['haikan', 'haisen']],
+    [2, 'バスダクト配線', null, ['haisen']],
+    [2, 'ケーブル配線（光ファイバケーブルを除く）', null, ['haisen']],
+    [2, '光ファイバケーブル配線', null, ['haisen']],
+    [2, '床上配線', null, ['haisen']],
+    [2, '架空配線', null, ['kakuu']],
+    [2, '地中配線', null, ['chichu']],
+    [3, '雷保護装置', null, ['rai']],
+    [3, '雷保護設備', null, ['rai']]
+  ];
+  // 規則に無い項目は、管理表の章ごとにこの工事にする（共通項目 COMMON は除く。⑵ は規則に無い項目＝共通項目だけなので出さない）
+  var SEKO_CHAP = { 1: 'ippan', 3: 'kiki', 4: 'juhen', 5: 'juhen', 6: 'juhen', 7: 'kiki', 8: 'kanshi', 9: 'iryo' };
+
   var state = { info: {}, sel: {}, opt: {}, infoOpen: true, docType: '', koshu: 0, sekoChap: null };
-  var ui = { chap: {}, item: {}, group: {} };
+  var ui = { chap: {}, item: {}, group: {}, seko: {} };
   var lastFile = null;   // { blob, name, url }
 
   function $(id) { return document.getElementById(id); }
@@ -140,12 +173,8 @@
     if (state.opt.honbun === undefined) { state.opt.honbun = false; }
     if (state.opt.seko === undefined) { state.opt.seko = false; }
     if (state.opt.shinsei === undefined) { state.opt.shinsei = false; }
-    // 施工チェックシートの章は、保存値に無い章（未保存・データを読めなかったとき・あとから増えた章）を選択にする。
-    // 外した章は false で保存するため、利用者が外した章は選択に戻らない
-    if (!state.sekoChap) { state.sekoChap = {}; }
-    sekoChapters().forEach(function (c) {
-      if (state.sekoChap[c.id] === undefined) { state.sekoChap[c.id] = true; }
-    });
+    // 施工チェックシートの章は②の選択から決める（refresh の syncSekoChap）。保存しておらず、旧版の保存値も使わない
+    state.sekoChap = {};
     OPT_KEYS.forEach(function (k) {
       if (state.opt[k] === undefined) { state.opt[k] = true; }
     });
@@ -153,7 +182,8 @@
 
   function save() {
     try {
-      window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      // sekoChap は②の選択から毎回決め直すため保存しない
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(state, function (k, v) { return k === 'sekoChap' ? undefined : v; }));
     } catch (e) { /* 保存できない環境でも動作は継続 */ }
   }
 
@@ -175,10 +205,28 @@
     return ch.items.some(function (it) { return itemCount(it) > 0; });
   }
 
-  // 工種に合わせて管理表の項目を選び直す。登録の無い工種は false を返し、選択を変えない
+  // 工種に合わせて管理表の項目（⑵〜⑼）を選び直す。登録の無い工種は false を返し、選択を変えない。
+  // ⑵〜⑼ に選択があり、選び直すと変わるときは確認を出し、「キャンセル」なら今の選択のまま false を返す
   function selectByKoshu(koshu) {
     var map = KOSHU_ITEMS[koshu];
     if (!map) { return false; }
+    var any = false;
+    var diff = false;
+    DATA.chapters.forEach(function (ch) {
+      if (ch.id === 1) { return; }
+      var names = map[ch.id] || [];
+      ch.items.forEach(function (it) {
+        var n = itemCount(it);
+        if (n > 0) { any = true; }
+        if (names.indexOf(it.name) >= 0 ? n !== it.groups.length : n > 0) { diff = true; }
+      });
+    });
+    if (!diff) { return true; }
+    if (any) {
+      var name = koshuList()[koshu] || '';
+      if (!window.confirm('「②工事種目の選択」の⑵〜⑼を、工種「' + name + '」の項目に選び直しますか？\n'
+        + '（⑴は変えません。「キャンセル」なら今の選択のまま残します）')) { return false; }
+    }
     DATA.chapters.forEach(function (ch) {
       if (ch.id === 1) { return; }
       var names = map[ch.id] || [];
@@ -194,7 +242,58 @@
     });
   }
 
+  // SEKO_RULES を「章id|項目名」ごとにまとめたもの（初回に1回だけ作る）
+  var sekoIndex = null;
+  function sekoRuleIndex() {
+    if (!sekoIndex) {
+      sekoIndex = {};
+      SEKO_RULES.forEach(function (r) {
+        var k = r[0] + '|' + r[1];
+        if (!sekoIndex[k]) { sekoIndex[k] = []; }
+        sekoIndex[k].push(r);
+      });
+    }
+    return sekoIndex;
+  }
+
+  // 管理表の細目 g（章 ch・項目 it）を選んだときに出力する施工チェックシートの工事。{ ids: 工事id の配列, mat: 材料の項目か }
+  function sekoTargets(ch, it, g) {
+    if (ch.id !== 1 && COMMON.indexOf(it.name) >= 0) { return { ids: [], mat: false }; }
+    var own = sekoRuleIndex()[ch.id + '|' + it.name];
+    if (!own) { return { ids: SEKO_CHAP[ch.id] ? [SEKO_CHAP[ch.id]] : [], mat: false }; }
+    var hit = own.filter(function (r) { return r[2] && r[2].indexOf(g.e) >= 0; });
+    if (!hit.length) { hit = own.filter(function (r) { return !r[2]; }); }
+    var out = [];
+    var mat = false;
+    hit.forEach(function (r) { out = out.concat(r[3]); if (r[4] === true) { mat = true; } });
+    return { ids: out, mat: mat };
+  }
+
+  // ②の選択から、施工チェックシートの工事（章）の選択を決め直す
+  function syncSekoChap() {
+    var on = {};
+    var mat = {};
+    var seko2 = false;   // ⑵ で工事が決まる施工の項目を選んでいるか
+    DATA.chapters.forEach(function (ch) {
+      ch.items.forEach(function (it) {
+        it.groups.forEach(function (g) {
+          if (!state.sel[g.id]) { return; }
+          var t = sekoTargets(ch, it, g);
+          t.ids.forEach(function (id) { if (t.mat) { mat[id] = true; } else { on[id] = true; } });
+          if (ch.id === 2 && !t.mat && t.ids.length) { seko2 = true; }
+        });
+      });
+    });
+    if (!seko2) { Object.keys(mat).forEach(function (id) { on[id] = true; }); }
+    state.sekoChap = {};
+    sekoChapters().forEach(function (c) {
+      state.sekoChap[c.id] = !!on[c.id];
+      if (ui.seko[c.id]) { ui.seko[c.id].checked = !!on[c.id]; }
+    });
+  }
+
   function refresh() {
+    syncSekoChap();
     var totalItems = 0;
     var totalRows = 0;
     var totalChaps = 0;
@@ -233,7 +332,7 @@
       text = sekoN ? ('施工チェックシート ' + sekoN + '工事を出力します') : '';
     }
     if (seko && sekoN === 0) {
-      text = '施工チェックシートの工事が選択されていません';
+      text = '施工チェックシートの工事がありません（②で工事種目を選択してください）';
     }
     $('summary').textContent = text;
     $('exportBtn').disabled = (needSel && totalItems === 0) || (seko && sekoN === 0);
@@ -401,26 +500,30 @@
     return n;
   }
 
+  // 施工チェックシートの章の一覧（データは変わらないため、初回に作ったものを使い回す）
+  var sekoChapList = null;
   function sekoChapters() {
-    var f = window.SKUKIKKSExport.sekoChapters;
-    return f ? f() : [];
+    if (!sekoChapList) {
+      var f = window.SKUKIKKSExport.sekoChapters;
+      sekoChapList = f ? f() : [];
+    }
+    return sekoChapList;
   }
 
-  // 施工チェックシートの章の選択欄（「③出力内容」の施工チェックシートの下）
+  // 施工チェックシートの章の表示欄（「③出力内容」の施工チェックシートの下）。②の選択に連動するため、ここでは変更できない
   function renderSekoChaps() {
     var root = $('sekoChaps');
+    root.appendChild(el('p', 'hint', '出力する工事は「②工事種目の選択」に連動します（例：接地を1つでも選ぶと接地工事を出力）。'));
     sekoChapters().forEach(function (c) {
       var lab = el('label', 'check sub');
       var cb = document.createElement('input');
       cb.type = 'checkbox';
+      cb.disabled = true;
       cb.checked = !!state.sekoChap[c.id];
-      cb.addEventListener('change', function () {
-        state.sekoChap[c.id] = cb.checked;
-        changed();
-      });
       lab.appendChild(cb);
       lab.appendChild(el('span', null, c.no + '　' + c.name));
       root.appendChild(lab);
+      ui.seko[c.id] = cb;
     });
   }
 
@@ -440,12 +543,12 @@
     var withHannyu = state.opt.hannyu === true;
     var withSatsuei = state.opt.satsuei === true;
     var withHonbun = state.opt.honbun === true;
-    var byKoshu = typeByKoshu || withCheck || withHannyu || withSatsuei;
+    var byKoshu = typeByKoshu || withCheck || withHannyu || withSatsuei || state.opt.seko === true;
     if (withHonbun) { hint += honbunHint(); }
     if (withSatsuei && !(window.SATSUEI_DATA && window.SATSUEI_DATA[state.koshu])) {
       hint += 'この工種の撮影箇所は作成例に無いため、撮影対象表（電気設備工事編）の全行を出力します。';
     }
-    if (state.docType === 'koshu') {
+    if (byKoshu) {
       hint += KOSHU_ITEMS[state.koshu]
         ? '工種を選ぶと、管理表の項目（⑵〜⑼）をその工種に合わせて選び直します。あとから個別に変更できます。'
         : 'この工種は管理表の項目を自動では選びません。必要な項目をチェックしてください。';
@@ -460,7 +563,7 @@
       hint += '機器搬入計画書は、共通の部分だけ記入した雛形を出力します（機器名は「工種」が搬入・据付け工事のときに入ります）。ワイヤロープの選定は、Excel で条件の欄を書き換えると再計算されます。';
     }
     if (state.opt.seko === true && state.docType !== 'seko') {
-      hint += '施工チェックシートは、「③出力内容」で選んだ工事のシートを出力します。';
+      hint += '施工チェックシートは、「②工事種目の選択」に連動した工事のシートを出力します。';
     }
     if (state.opt.jishu === true) {
       hint += '使用前自主検査の検査項目は、検査項目ごとに1シートずつ出力します。B種接地抵抗許容値は、Excel で色付きの欄を書き換えると再計算されます。';
@@ -498,8 +601,9 @@
     var list = koshuList();
     if (type === 'koshu') {
       title = state.koshu < list.length ? list[state.koshu] : '工種別施工計画書';
-      selectByKoshu(state.koshu);
     }
+    // 工種を選ぶ書類は、②をその工種に合わせて選び直す（登録の無い工種は変えない）
+    if (type === 'koshu' || type === 'check' || type === 'satsuei') { selectByKoshu(state.koshu); }
     if (type === 'check') {
       title = (state.koshu < list.length ? list[state.koshu].replace(/施工計画書$|計画書$/, '') + ' ' : '')
         + '品質管理チェックシート';
@@ -528,9 +632,11 @@
     sel.addEventListener('change', function () {
       state.koshu = Number(sel.value) || 0;
       if (state.docType === 'koshu' || state.docType === 'check' || state.docType === 'satsuei') {
-        applyDocType(state.docType);       // 書類名を工種に合わせる
+        applyDocType(state.docType);       // 書類名を工種に合わせる（工種別は②も選び直す）
       } else {
-        showDocType();                     // 施工計画書のみ・総合では、書類名や出力内容は変えない
+        // 施工計画書のみ・総合・施工チェックでは、書類名や出力内容は変えず、②をその工種に合わせて選び直す（③の施工チェックの工事も連動）
+        selectByKoshu(state.koshu);
+        showDocType();
         changed();
       }
     });

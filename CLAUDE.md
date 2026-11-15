@@ -27,6 +27,7 @@
 | `tools/build_sekocheck.py` | `docs/sekocheck` の読み取り記録 → `data/sekocheck.js` 変換（SC 番号で決めた表記の修正は `FIX_TEXT`・`fix_ref`） |
 | `tools/test_export.js` / `compare_xlsx.py` | 出力の回帰テスト（全工種の Excel を作って変更前と比べる） |
 | `tools/check_sekocheck.py` | 施工チェックシートの出力の検査（項番号の件数・丸数字の対応・切り詰め・章の選択）。`test_export.js` の出力に対して実行 |
+| `tools/check_seko_rules.js` | ②→③の判定規則（`SEKO_RULES`・`KOSHU_ITEMS`）の名前と工種ごとの結果の検査（`node tools/check_seko_rules.js` で `OK`） |
 | `source/` | 国交省 管理表（令和8年版）原本 xlsx 9ファイル |
 | `vendor/` | ExcelJS 4.4.0（MIT。ライセンス同梱） |
 | `sw.js` / `manifest.webmanifest` / `icons/` | PWA 関連 |
@@ -61,6 +62,7 @@
   施工チェック `seko`（品質管理チェックシートとは全く別の書類）
   （`js/app.js` の `DOC_TYPES`）。切り替えると書類名と出力内容が初期値になる → `shorui.md`
 - 工種別は1工種ずつ作る。工種を選ぶと管理表の ⑵〜⑼ をその工種の項目に置き換える（`KOSHU_ITEMS`。⑴ は変えない）
+- ①工種 → ②工事種目 → ③施工チェックシートの工事 は連動する（③の工事は②から自動で決まる。`SEKO_RULES`）→ `gamen.md`
 - 機器搬入計画書ほか・使用前自主検査・総合試運転・報告書の表は「③出力内容」のチェックで出す（初期値オフ）
 - 本文シートは作成例の文章（`data/honbun.js`。出力するときだけ読み込む）。原本から表記を変えたものは
   `tools/build_honbun.py` の `FIX`、自動で作れない項は `OVERRIDE`。除いた行は `--dropped` で確認する
@@ -78,6 +80,7 @@
 2. `python3 tools/build_data.py` を実行し、項目数・行数の出力を確認
 3. `sw.js` の `VERSION` を上げる
 4. 細目 id が変わるため、端末に保存済みのチェック状態は引き継がれない点に注意
+5. `js/app.js` の `KOSHU_ITEMS`・`SEKO_RULES` は項目名・細目名の完全一致で照合するため、`node tools/check_seko_rules.js` が `OK` になることを確かめる
 
 ## 本書の記録（`docs/honsho/`）
 
