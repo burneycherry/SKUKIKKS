@@ -173,7 +173,7 @@
     if (state.opt.honbun === undefined) { state.opt.honbun = false; }
     if (state.opt.seko === undefined) { state.opt.seko = false; }
     if (state.opt.shinsei === undefined) { state.opt.shinsei = false; }
-    // 施工チェックシートの章は②の選択から決める（refresh の syncSekoChap）。保存値は使わない
+    // 施工チェックシートの章は②の選択から決める（refresh の syncSekoChap）。保存しておらず、旧版の保存値も使わない
     state.sekoChap = {};
     OPT_KEYS.forEach(function (k) {
       if (state.opt[k] === undefined) { state.opt[k] = true; }
@@ -182,7 +182,8 @@
 
   function save() {
     try {
-      window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      // sekoChap は②の選択から毎回決め直すため保存しない
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(state, function (k, v) { return k === 'sekoChap' ? undefined : v; }));
     } catch (e) { /* 保存できない環境でも動作は継続 */ }
   }
 
@@ -204,10 +205,28 @@
     return ch.items.some(function (it) { return itemCount(it) > 0; });
   }
 
-  // 工種に合わせて管理表の項目を選び直す。登録の無い工種は false を返し、選択を変えない
+  // 工種に合わせて管理表の項目（⑵〜⑼）を選び直す。登録の無い工種は false を返し、選択を変えない。
+  // ⑵〜⑼ に選択があり、選び直すと変わるときは確認を出し、「キャンセル」なら今の選択のまま false を返す
   function selectByKoshu(koshu) {
     var map = KOSHU_ITEMS[koshu];
     if (!map) { return false; }
+    var any = false;
+    var diff = false;
+    DATA.chapters.forEach(function (ch) {
+      if (ch.id === 1) { return; }
+      var names = map[ch.id] || [];
+      ch.items.forEach(function (it) {
+        var n = itemCount(it);
+        if (n > 0) { any = true; }
+        if (names.indexOf(it.name) >= 0 ? n !== it.groups.length : n > 0) { diff = true; }
+      });
+    });
+    if (!diff) { return true; }
+    if (any) {
+      var name = koshuList()[koshu] || '';
+      if (!window.confirm('「②工事種目の選択」の⑵〜⑼を、工種「' + name + '」の項目に選び直しますか？\n'
+        + '（⑴は変えません。「キャンセル」なら今の選択のまま残します）')) { return false; }
+    }
     DATA.chapters.forEach(function (ch) {
       if (ch.id === 1) { return; }
       var names = map[ch.id] || [];
@@ -223,11 +242,25 @@
     });
   }
 
+  // SEKO_RULES を「章id|項目名」ごとにまとめたもの（初回に1回だけ作る）
+  var sekoIndex = null;
+  function sekoRuleIndex() {
+    if (!sekoIndex) {
+      sekoIndex = {};
+      SEKO_RULES.forEach(function (r) {
+        var k = r[0] + '|' + r[1];
+        if (!sekoIndex[k]) { sekoIndex[k] = []; }
+        sekoIndex[k].push(r);
+      });
+    }
+    return sekoIndex;
+  }
+
   // 管理表の細目 g（章 ch・項目 it）を選んだときに出力する施工チェックシートの工事。{ ids: 工事id の配列, mat: 材料の項目か }
   function sekoTargets(ch, it, g) {
     if (ch.id !== 1 && COMMON.indexOf(it.name) >= 0) { return { ids: [], mat: false }; }
-    var own = SEKO_RULES.filter(function (r) { return r[0] === ch.id && r[1] === it.name; });
-    if (!own.length) { return { ids: SEKO_CHAP[ch.id] ? [SEKO_CHAP[ch.id]] : [], mat: false }; }
+    var own = sekoRuleIndex()[ch.id + '|' + it.name];
+    if (!own) { return { ids: SEKO_CHAP[ch.id] ? [SEKO_CHAP[ch.id]] : [], mat: false }; }
     var hit = own.filter(function (r) { return r[2] && r[2].indexOf(g.e) >= 0; });
     if (!hit.length) { hit = own.filter(function (r) { return !r[2]; }); }
     var out = [];
@@ -467,9 +500,14 @@
     return n;
   }
 
+  // 施工チェックシートの章の一覧（データは変わらないため、初回に作ったものを使い回す）
+  var sekoChapList = null;
   function sekoChapters() {
-    var f = window.SKUKIKKSExport.sekoChapters;
-    return f ? f() : [];
+    if (!sekoChapList) {
+      var f = window.SKUKIKKSExport.sekoChapters;
+      sekoChapList = f ? f() : [];
+    }
+    return sekoChapList;
   }
 
   // 施工チェックシートの章の表示欄（「③出力内容」の施工チェックシートの下）。②の選択に連動するため、ここでは変更できない

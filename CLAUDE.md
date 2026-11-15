@@ -27,6 +27,7 @@
 | `tools/build_sekocheck.py` | `docs/sekocheck` の読み取り記録 → `data/sekocheck.js` 変換（SC 番号で決めた表記の修正は `FIX_TEXT`・`fix_ref`） |
 | `tools/test_export.js` / `compare_xlsx.py` | 出力の回帰テスト（全工種の Excel を作って変更前と比べる） |
 | `tools/check_sekocheck.py` | 施工チェックシートの出力の検査（項番号の件数・丸数字の対応・切り詰め・章の選択）。`test_export.js` の出力に対して実行 |
+| `tools/check_seko_rules.js` | ②→③の判定規則（`SEKO_RULES`・`KOSHU_ITEMS`）の名前と工種ごとの結果の検査（`node tools/check_seko_rules.js` で `OK`） |
 | `source/` | 国交省 管理表（令和8年版）原本 xlsx 9ファイル |
 | `vendor/` | ExcelJS 4.4.0（MIT。ライセンス同梱） |
 | `sw.js` / `manifest.webmanifest` / `icons/` | PWA 関連 |
@@ -79,7 +80,7 @@
 2. `python3 tools/build_data.py` を実行し、項目数・行数の出力を確認
 3. `sw.js` の `VERSION` を上げる
 4. 細目 id が変わるため、端末に保存済みのチェック状態は引き継がれない点に注意
-5. `js/app.js` の `KOSHU_ITEMS`・`SEKO_RULES` は項目名・細目名の完全一致で照合するため、名前の変更が無いか確認する
+5. `js/app.js` の `KOSHU_ITEMS`・`SEKO_RULES` は項目名・細目名の完全一致で照合するため、`node tools/check_seko_rules.js` が `OK` になることを確かめる
 
 ## 本書の記録（`docs/honsho/`）
 
