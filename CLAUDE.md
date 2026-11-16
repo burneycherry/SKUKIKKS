@@ -118,3 +118,4 @@ python3 tools/compare_xlsx.py /tmp/before /tmp/after
 - 仕様を変えたら `docs/shiyo/` の該当ファイルも直す
 - CLAUDE.md は 100〜200 行に保ち、詳細は別ファイル（`docs/` 等）に分けて管理する
 - 不明な点は推測で埋めず「不明」と明記する
+- 「mainへマージ」と指示されたら、プルリクエストは作らずに作業ブランチを main へ直接マージして push する
